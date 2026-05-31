@@ -1,0 +1,313 @@
+Folder PATH listing
+Volume serial number is 00000067 5683:E08F
+C:.
+|   .gitignore
+|   changelog.md
+|   dev-requirements.in
+|   dev-requirements.txt
+|   folder_structure.txt
+|   LICENSE
+|   privacy.md
+|   README-speedmeter.md
+|   requirements-speedmeter.in
+|   requirements.in
+|   requirements.txt
+|   signpath.yml
+|   
++---.github
+|   |   FUNDING.yml
+|   |   
+|   \---workflows
+|           release.yml
+|           
++---.vscode
+|       launch.json
+|       settings.json
+|       
++---assets
+|       NetSpeedTray.ico
+|       
++---build
+|       build-exe-only.bat
+|       build.bat
+|       create_version_info.py
+|       netspeedmeter.spec
+|       netspeedtray.spec
+|       setup.iss
+|       version_info.txt
+|       
++---screenshots
+|       graph.png
+|       main.png
+|       main_graph.png
+|       main_graph_1.0.5b1.png
+|       main_graph_1.1.0.png
+|       main_graph_1.1.7.png
+|       main_graph_1.2.5.png
+|       main_new.png
+|       main_new_1.1.2.png
+|       main_new_105b.png
+|       mini_graph.png
+|       netspeedtray-hero.jpg
+|       NST_logo.PNG
+|       settings_1.0.1.png
+|       settings_1.0.3.png
+|       settings_1.0.4.png
+|       settings_1.0.5b1.png
+|       settings_1.0.5b2.png
+|       settings_1.1.1.png
+|       settings_1.1.2.png
+|       settings_1.1.7.png
+|       settings_1.2.5.png
+|       
+\---src
+    |   monitor.py
+    |   speedmeter.py
+    |   
+    \---netspeedtray
+        |   __init__.py
+        |   
+        +---constants
+        |   |   app.py
+        |   |   color.py
+        |   |   config.py
+        |   |   data.py
+        |   |   export.py
+        |   |   fonts.py
+        |   |   graph.py
+        |   |   i18n.py
+        |   |   layout.py
+        |   |   logs.py
+        |   |   network.py
+        |   |   renderer.py
+        |   |   shell.py
+        |   |   state.py
+        |   |   styles.py
+        |   |   taskbar.py
+        |   |   timeouts.py
+        |   |   timers.py
+        |   |   ui.py
+        |   |   update_mode.py
+        |   |   __init__.py
+        |   |   
+        |   +---locales
+        |   |       de_DE.json
+        |   |       en_US.json
+        |   |       es_ES.json
+        |   |       fr_FR.json
+        |   |       ko_KR.json
+        |   |       nl_NL.json
+        |   |       pl_PL.json
+        |   |       ru_RU.json
+        |   |       sl_SI.json
+        |   |       Untitled-1.txt
+        |   |       
+        |   \---__pycache__
+        |           app.cpython-312.pyc
+        |           color.cpython-312.pyc
+        |           config.cpython-312.pyc
+        |           data.cpython-312.pyc
+        |           export.cpython-312.pyc
+        |           fonts.cpython-312.pyc
+        |           graph.cpython-312.pyc
+        |           i18n.cpython-312.pyc
+        |           layout.cpython-312.pyc
+        |           logs.cpython-312.pyc
+        |           network.cpython-312.pyc
+        |           renderer.cpython-312.pyc
+        |           shell.cpython-312.pyc
+        |           state.cpython-312.pyc
+        |           styles.cpython-312.pyc
+        |           taskbar.cpython-312.pyc
+        |           timeouts.cpython-312.pyc
+        |           timers.cpython-312.pyc
+        |           ui.cpython-312.pyc
+        |           update_mode.cpython-312.pyc
+        |           __init__.cpython-312.pyc
+        |           
+        +---core
+        |   |   config_controller.py
+        |   |   controller.py
+        |   |   database.py
+        |   |   input_handler.py
+        |   |   monitor_thread.py
+        |   |   position_manager.py
+        |   |   startup_manager.py
+        |   |   system_events.py
+        |   |   timer_manager.py
+        |   |   tray_manager.py
+        |   |   update_checker.py
+        |   |   widget_state.py
+        |   |   __init__.py
+        |   |   
+        |   \---__pycache__
+        |           config_controller.cpython-312.pyc
+        |           controller.cpython-312.pyc
+        |           database.cpython-312.pyc
+        |           input_handler.cpython-312.pyc
+        |           monitor_thread.cpython-312.pyc
+        |           position_manager.cpython-312.pyc
+        |           startup_manager.cpython-312.pyc
+        |           system_events.cpython-312.pyc
+        |           timer_manager.cpython-312.pyc
+        |           tray_manager.cpython-312.pyc
+        |           update_checker.cpython-312.pyc
+        |           widget_state.cpython-312.pyc
+        |           __init__.cpython-312.pyc
+        |           
+        +---tests
+        |   |   check_translations.py
+        |   |   debug_graph_perf.py
+        |   |   __init__.py
+        |   |   
+        |   +---debug_scripts
+        |   |       debug_colors.py
+        |   |       debug_renderer.py
+        |   |       
+        |   +---performance
+        |   |       benchmark_gap_detection.py
+        |   |       cleanup_graph.py
+        |   |       verify_graph_render.py
+        |   |       
+        |   \---unit
+        |           conftest.py
+        |           test_app_activity_worker.py
+        |           test_config.py
+        |           test_controller.py
+        |           test_data_request.py
+        |           test_db_migration.py
+        |           test_graph_interaction.py
+        |           test_graph_logic.py
+        |           test_graph_window_resize.py
+        |           test_graph_worker.py
+        |           test_hardware_monitoring.py
+        |           test_input_handler.py
+        |           test_locales_parity.py
+        |           test_monitor_thread.py
+        |           test_positioning_edge_cases.py
+        |           test_position_manager.py
+        |           test_position_manager_dpi.py
+        |           test_position_manager_multimon.py
+        |           test_renderer_logic.py
+        |           test_settings.py
+        |           test_settings_pages.py
+        |           test_system_events.py
+        |           test_tray_manager.py
+        |           test_widget_state.py
+        |           __init__.py
+        |           
+        +---utils
+        |   |   components.py
+        |   |   config.py
+        |   |   db_utils.py
+        |   |   exporters.py
+        |   |   helpers.py
+        |   |   network_utils.py
+        |   |   rdp_utils.py
+        |   |   speed_renderer.py
+        |   |   styles.py
+        |   |   taskbar_utils.py
+        |   |   timer_utils.py
+        |   |   visibility_manager.py
+        |   |   widget_renderer.py
+        |   |   win_event_hook.py
+        |   |   __init__.py
+        |   |   
+        |   \---__pycache__
+        |           components.cpython-312.pyc
+        |           config.cpython-312.pyc
+        |           helpers.cpython-312.pyc
+        |           network_utils.cpython-312.pyc
+        |           rdp_utils.cpython-312.pyc
+        |           speed_renderer.cpython-312.pyc
+        |           styles.cpython-312.pyc
+        |           taskbar_utils.cpython-312.pyc
+        |           timer_utils.cpython-312.pyc
+        |           widget_renderer.cpython-312.pyc
+        |           win_event_hook.cpython-312.pyc
+        |           __init__.cpython-312.pyc
+        |           
+        +---views
+        |   |   NetSpeedTray.ico
+        |   |   speed_settings.py
+        |   |   speed_widget.py
+        |   |   __init__.py
+        |   |   
+        |   +---app_activity
+        |   |       window.py
+        |   |       worker.py
+        |   |       __init__.py
+        |   |       
+        |   +---graph
+        |   |   |   config_handler.py
+        |   |   |   controls.py
+        |   |   |   coordinator.py
+        |   |   |   interaction.py
+        |   |   |   logic.py
+        |   |   |   README.md
+        |   |   |   renderer.py
+        |   |   |   request.py
+        |   |   |   ui.py
+        |   |   |   window.py
+        |   |   |   worker.py
+        |   |   |   __init__.py
+        |   |   |   
+        |   |   \---__pycache__
+        |   |           config_handler.cpython-312.pyc
+        |   |           controls.cpython-312.pyc
+        |   |           coordinator.cpython-312.pyc
+        |   |           interaction.cpython-312.pyc
+        |   |           logic.cpython-312.pyc
+        |   |           renderer.cpython-312.pyc
+        |   |           request.cpython-312.pyc
+        |   |           ui.cpython-312.pyc
+        |   |           window.cpython-312.pyc
+        |   |           worker.cpython-312.pyc
+        |   |           __init__.cpython-312.pyc
+        |   |           
+        |   +---settings
+        |   |   |   dialog.py
+        |   |   |   __init__.py
+        |   |   |   
+        |   |   +---pages
+        |   |   |   |   appearance.py
+        |   |   |   |   colors.py
+        |   |   |   |   general.py
+        |   |   |   |   hardware.py
+        |   |   |   |   interfaces.py
+        |   |   |   |   units.py
+        |   |   |   |   __init__.py
+        |   |   |   |   
+        |   |   |   \---__pycache__
+        |   |   |           appearance.cpython-312.pyc
+        |   |   |           colors.cpython-312.pyc
+        |   |   |           general.cpython-312.pyc
+        |   |   |           hardware.cpython-312.pyc
+        |   |   |           interfaces.cpython-312.pyc
+        |   |   |           units.cpython-312.pyc
+        |   |   |           __init__.cpython-312.pyc
+        |   |   |           
+        |   |   \---__pycache__
+        |   |           dialog.cpython-312.pyc
+        |   |           __init__.cpython-312.pyc
+        |   |           
+        |   +---widget
+        |   |   |   layout.py
+        |   |   |   main.py
+        |   |   |   theme.py
+        |   |   |   __init__.py
+        |   |   |   
+        |   |   \---__pycache__
+        |   |           layout.cpython-312.pyc
+        |   |           main.cpython-312.pyc
+        |   |           theme.cpython-312.pyc
+        |   |           __init__.cpython-312.pyc
+        |   |           
+        |   \---__pycache__
+        |           speed_settings.cpython-312.pyc
+        |           speed_widget.cpython-312.pyc
+        |           __init__.cpython-312.pyc
+        |           
+        \---__pycache__
+                __init__.cpython-312.pyc
+                

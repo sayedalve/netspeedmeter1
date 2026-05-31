@@ -1,1 +1,1 @@
-from netspeedtray.views.widget.main import NetworkSpeedWidget
+# Blanked to prevent old UI imports

@@ -1,11 +1,7 @@
 """
-Views submodule for NetSpeedTray.
-
-Contains UI-related classes like NetworkSpeedWidget, SettingsDialog, and GraphWindow.
+Views submodule for NetSpeedMeter.
+Intentionally left blank to prevent importing old UI components.
 """
 
-from netspeedtray.views.widget import NetworkSpeedWidget
-from netspeedtray.views.settings import SettingsDialog
-from netspeedtray.views.graph import GraphWindow
-
-__all__ = ["NetworkSpeedWidget", "SettingsDialog", "GraphWindow"]
+# All old UI imports (NetworkSpeedWidget, SettingsDialog, GraphWindow) 
+# have been removed to fix the ModuleNotFoundError.

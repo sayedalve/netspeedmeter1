@@ -1,9 +1,9 @@
-# NetSpeedTray.spec
-from PyInstaller.utils.hooks import collect_all
+# netspeedmeter.spec
+# PyInstaller build spec for the focused internet speed meter.
+# Removed: matplotlib, graph window, hardware monitoring hooks.
 
 block_cipher = None
 
-# Define your manual hidden imports
 my_hidden_imports = [
     'PyQt6.QtCore',
     'PyQt6.QtGui',
@@ -11,31 +11,30 @@ my_hidden_imports = [
     'psutil',
     'win32api',
     'win32com.shell.shell',
-    'matplotlib',
-    'matplotlib.pyplot',
-    'matplotlib.backends.backend_qtagg',
     'numpy',
     'signal',
     'wmi',
 ]
 
 a = Analysis(
-    ['..\\src\\monitor.py'],
+    ['..\\src\\speedmeter.py'],
     pathex=[],
     binaries=[],
     datas=[
         ('..\\assets', 'assets'),
-        ('..\\src\\netspeedtray\\constants\\locales', 'netspeedtray/constants/locales')
+        ('..\\src\\netspeedtray\\constants\\locales', 'netspeedtray/constants/locales'),
     ],
     hiddenimports=my_hidden_imports,
     hookspath=[],
     runtime_hooks=[],
-    excludes=['pandas'],
+    # Exclude heavy libs that are no longer needed
+    excludes=['pandas', 'matplotlib', 'scipy', 'sklearn'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
-    noarchive=False
+    noarchive=False,
 )
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
@@ -44,7 +43,7 @@ exe = EXE(
     [],
     a.binaries,
     a.datas,
-    name='NetSpeedTray',
+    name='NetSpeedMeter',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -56,7 +55,6 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon='..\\assets\\NetSpeedTray.ico',
-    version='version_info.txt'
 )
 
 coll = COLLECT(
@@ -67,5 +65,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name='NetSpeedTray'
+    name='NetSpeedMeter',
 )
