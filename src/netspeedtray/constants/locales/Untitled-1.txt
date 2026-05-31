@@ -1,0 +1,440 @@
+
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{tikz}
+\usetikzlibrary{patterns, arrows.meta, positioning, calc}
+\usepackage[margin=1in]{geometry}
+\usepackage{float}
+\usepackage{color}
+\pagestyle{empty}
+\begin{document}
+
+\section*{Problem Statement}
+Analyze the frame below using the method of consistent deformation. Determine the support reactions, and draw the shear force diagram (SFD) and bending moment diagram (BMD). Assume flexural rigidity is $2I$ for the left and right columns, and $I$ for the beam. 
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9]
+
+    % Draw members
+    \draw[line width=1.5pt, fill=white] (0,6) rectangle (0.2,0);     
+    \draw[line width=1.5pt, fill=white] (0,6) rectangle (8,6.2);     
+    \draw[line width=1.5pt, fill=white] (7.8,6.2) rectangle (8,0.2); 
+
+    % Fixed support at A
+    \draw[line width=1pt] (-0.5,0) -- (0.7,0);
+    \fill[pattern=north east lines] (-0.5,-0.3) rectangle (0.7,0);
+
+    % Roller support at B
+    \draw[line width=1pt] (7.9,0.2) circle (0.15);
+    \draw[line width=1pt] (7.4,0.05) -- (8.4,0.05);
+    \fill[pattern=north east lines] (7.4,-0.25) rectangle (8.4,0.05);
+
+    % Triangular load on AC
+    \draw[line width=1pt, blue] (-1.5,0) -- (0,6);
+
+    \foreach \y in {0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5}
+    {
+        \pgfmathsetmacro{\x}{-1.5*(1-\y/6)}
+        \draw[-{Latex[length=3mm]}, line width=1pt, blue]
+        (\x,\y) -- (0,\y);
+    }
+
+    \draw[line width=1pt, blue] (-1.5,0) -- (0,0);
+
+    % Label for triangular load
+    \node[below left] at (-1,-0.2) {$30\text{ kN/m}$};
+
+    % Uniform load on EB
+    \draw[line width=1pt, blue] (9.5,0.2) -- (9.5,6);
+
+    \foreach \y in {0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6}
+    {
+        \draw[-{Latex[length=3mm]}, line width=1pt, blue]
+        (9.5,\y) -- (8,\y);
+    }
+
+    % Label for UDL (placed cleanly on the right)
+    \node[right=4pt, blue] 
+    at (9.5,3) 
+    {$15\text{ kN/m}$};
+
+    % Point load at D
+    \draw[-{Latex[length=3mm]}, line width=1.5pt, blue]
+    (4,7.5) -- (4,6.2);
+
+    \node[above] at (4,7.5) {$90\text{ kN}$};
+
+    % Node labels
+    \node[above left=2pt] at (0,6) {$C$};
+    \node[below=2pt] at (4,6) {$D$};
+    \node[above right=2pt] at (8,6) {$E$};
+
+    \node[right=4pt] at (0,0.2) {$A$};
+    \node[left=4pt] at (7.8,0.2) {$B$};
+
+    % Horizontal dimensions
+    \draw[dashed] (0,-0.4) -- (0,-2);
+    \draw[dashed] (4,5.8) -- (4,-1.5);
+    \draw[dashed] (8,-0.4) -- (8,-2);
+
+    \draw[{Latex}-{Latex}, dashed]
+    (0,-1.2) -- (4,-1.2)
+    node[midway, fill=white]
+    {$4\text{ m}$};
+
+    \draw[{Latex}-{Latex}, dashed]
+    (4,-1.2) -- (8,-1.2)
+    node[midway, fill=white]
+    {$4\text{ m}$};
+
+    \draw[{Latex}-{Latex}, dashed]
+    (0,-1.8) -- (8,-1.8)
+    node[midway, fill=white]
+    {$I$};
+
+    \node[below] at (4,-2.2)
+    {$E=\text{constant}$};
+
+    % Vertical dimensions (Moved to the left of the BE column)
+    \draw[dashed] (7.8,6) -- (6.0,6);
+    \draw[dashed] (7.8,0.2) -- (6.0,0.2);
+
+    \draw[{Latex}-{Latex}, dashed]
+    (6.5,0.2) -- (6.5,6)
+    node[midway, fill=white, inner sep=2pt]
+    {$10\text{ m}$};
+    
+    % Inertia labels for columns
+    \node[right=4pt] at (0.2,3) {$2I$}; % Left column (AC) - updated to 2I
+    \node[left=4pt] at (7.8,3) {$2I$};  % Right column (BE)
+
+\end{tikzpicture}
+\end{figure}
+\section*{Compatibility Equation \& Primary Structure}
+Total unknown reactions = 4 ($A_x, A_y, M_A, B_y$). Available equilibrium equations = 3. 
+\begin{equation*}
+    \text{Degree of Indeterminacy (DOI)} = 4 - 3 = 1
+\end{equation*}
+Select the vertical reaction at roller support $B$ as the redundant force, acting upwards. Let $B_y = R_B$. The statically determinate primary structure is obtained by removing the roller at $B$, leaving a cantilever frame fixed at $A$. The compatibility condition requires zero total vertical deflection at support $B$:
+\begin{equation}
+    \Delta_B = \Delta_{B0} + R_B \cdot \delta_{BB} = 0
+\end{equation}
+Where:
+\begin{itemize}
+    \item $\Delta_{B0} =$ vertical displacement at $B$ due to actual external loads.
+    \item $\delta_{BB} =$ flexibility coefficient (vertical displacement at $B$ due to a unit vertical load at $B$).
+\end{itemize}
+
+\section*{Reactions of Primary Structure ($R_B = 0$)}
+Applying equilibrium equations to the primary cantilever structure. The triangular load acts to the right, generating a clockwise moment about A. The uniform load acts to the left, generating a counter-clockwise moment about A:
+\begin{align*}
+    \Sigma F_x &= 0 \quad (\rightarrow +) \\
+    \Rightarrow A_x + \frac{1}{2}(30)(10) - (15)(10) &= 0 \quad \therefore A_x = 0 \\[10pt]
+    \Sigma F_y &= 0 \quad (\uparrow +) \\
+    \Rightarrow A_y - 90 &= 0 \quad \therefore A_y = 90\text{ kN} \ (\uparrow) \\[10pt]
+    \Sigma M_A &= 0 \quad (\circlearrowleft +) \\
+    \Rightarrow M_A - 150 \left(\frac{10}{3}\right) - 90(4) + 150(5) &= 0 \\
+    \Rightarrow M_A - 500 - 360 + 750 &= 0 \quad \therefore M_A = 110\text{ kNm} \ (\text{CCW})
+\end{align*}
+
+\section*{Moment Equations}
+
+\subsection*{1. Actual Loads on Primary Structure ($M$)}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.95]
+    % Members
+    \draw[line width=1.5pt, fill=white] (0,6) rectangle (0.2,0); % Column AC
+    \draw[line width=1.5pt, fill=white] (0,6) rectangle (8,6.2); % Beam CE
+    \draw[line width=1.5pt, fill=white] (7.8,6.2) rectangle (8,0.2); % Column EB
+    
+    % Fixed A
+    \draw[line width=1pt] (-0.5,0) -- (0.7,0);
+    \fill[pattern=north east lines] (-0.5,-0.3) rectangle (0.7,0);
+
+    % Loads
+    % Triangular UDL on AC
+    \draw[line width=1pt, red] (-1.5,0) -- (0,6);
+    \foreach \y in {0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5} {
+        \pgfmathsetmacro{\x}{-1.5 * (1 - \y/6)}
+        \draw[-{Latex[length=2mm]}, red] (\x,\y) -- (0,\y);
+    }
+    \draw[line width=1pt, red] (-1.5,0) -- (0,0);
+    
+    % UDL on EB
+    \draw[line width=1pt, red] (9.5,0.2) -- (9.5,6);
+    \foreach \y in {0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6} {
+        \draw[-{Latex[length=2mm]}, red] (9.5,\y) -- (8,\y);
+    }
+    
+    % Point load at D
+    \draw[-{Latex[length=3mm]}, red, line width=1.5pt] (4,7.5) -- (4,6.2);
+    \node[above, red] at (4,7.5) {$90\text{ kN}$};
+
+    % Reactions
+    \draw[-{Latex[length=3mm]}, green!60!black, line width=1pt] (-0.5,-1.5) -- (-0.5,0);
+    \node[below, green!60!black] at (-0.5,-1.5) {$90\text{ kN}\ (\uparrow)$};
+
+    \draw[-{Latex[length=3mm]}, green!60!black, line width=1pt] (-0.2, -0.6) arc (-180:90:0.4);
+    \node[left, green!60!black] at (-0.6, -0.6) {$110\text{ kNm}\ (\text{CCW})$};
+
+    % Section a-a (Origin B)
+    \draw[blue, dashed, thick] (7.2,2.5) -- (9.8,2.5);
+    \node[right, blue] at (9.8,2.5) {a-a};
+    \draw[-{Latex}, blue, thick] (7.5,0.2) -- (7.5,2.5) node[midway, left] {$x$};
+    \draw[-{Latex}, blue, thick] (7.7,2.7) arc (0:180:0.4); % CCW on top face
+    \node[left, blue] at (6.8,3.2) {$M_{a\text{-}a}$};
+
+    % Section b-b (Origin E) - Separate x arrow above beam
+    \draw[blue, dashed, thick] (6,5.2) -- (6,7.5);
+    \node[above, blue] at (6,7.5) {b-b};
+    \draw[-{Latex}, blue, thick] (8,6.8) -- (6,6.8) node[midway, above] {$x$};
+    \draw[-{Latex}, blue, thick] (5.8,5.8) arc (-90:90:0.4); % CCW on left face
+    \node[left, blue] at (5.4,5.8) {$M_{b\text{-}b}$};
+
+    % Section c-c (Origin E) - Separate x arrow below beam
+    \draw[blue, dashed, thick] (2,4.5) -- (2,6.8);
+    \node[above, blue] at (2,6.8) {c-c};
+    \draw[-{Latex}, blue, thick] (8,5.0) -- (2,5.0) node[pos=0.7, below] {$x$};
+    \draw[-{Latex}, blue, thick] (1.8,5.8) arc (-90:90:0.4); % CCW on left face
+    \node[left, blue] at (1.4,5.8) {$M_{c\text{-}c}$};
+
+    % Section d-d (Origin A)
+    \draw[blue, dashed, thick] (-1.8,3) -- (0.8,3);
+    \node[right, blue] at (0.8,3) {d-d};
+    \draw[-{Latex}, blue, thick] (0.6,0) -- (0.6,3) node[midway, right] {$x$};
+    \draw[-{Latex}, blue, thick] (0.1,3.2) arc (0:180:0.4); % CCW on top face
+    \node[left, blue] at (-0.8,3.6) {$M_{d\text{-}d}$};
+
+    % Node labels
+    \node[above left=2pt]  at (0,6)   {$C$};
+    \node[below=2pt]       at (4,6)   {$D$};
+    \node[above right=2pt] at (8,6)   {$E$};
+    \node[right=4pt]       at (0,0.2) {$A$};
+    \node[left=4pt]        at (7.8,0.2) {$B$};
+\end{tikzpicture}
+\end{figure}
+
+All internal moments are drawn strictly counter-clockwise (CCW). Applying equilibrium ($\Sigma M = 0$, CCW positive):
+\begin{itemize}
+    \item \textbf{Section a-a (Origin B, $0 \le x \le 10$ m):}
+    \begin{align*}
+        \Sigma M_{\text{cut}} &= 0 \quad (\circlearrowleft +) \\
+        \Rightarrow M_{a-a} - 15 x \left(\frac{x}{2}\right) &= 0 \quad \Rightarrow M_{a-a} = 7.5 x^2
+    \end{align*}
+    
+    \item \textbf{Section b-b (Origin E, $0 \le x \le 4$ m):}
+    \begin{align*}
+        \Sigma M_{\text{cut}} &= 0 \quad (\circlearrowleft +) \\
+        \Rightarrow M_{b-b} - 150(5) &= 0 \quad \Rightarrow M_{b-b} = 750
+    \end{align*}
+
+    \item \textbf{Section c-c (Origin E, $4 \le x \le 8$ m):}
+    \begin{align*}
+        \Sigma M_{\text{cut}} &= 0 \quad (\circlearrowleft +) \\
+        \Rightarrow M_{c-c} - 150(5) - 90(x - 4) &= 0 \quad \Rightarrow M_{c-c} = 390 + 90 x
+    \end{align*}
+
+    \item \textbf{Section d-d (Origin A, $0 \le x \le 10$ m):}
+    \begin{align*}
+        \Sigma M_{\text{cut}} &= 0 \quad (\circlearrowleft +) \\
+        \Rightarrow M_{d-d} + 110 + \left[15 x^2 - 0.5 x^3\right] &= 0 \quad \Rightarrow M_{d-d} = -110 - 15 x^2 + 0.5 x^3
+    \end{align*}
+\end{itemize}
+
+\subsection*{2. Unit Virtual Load Applied at B ($m$)}
+Remove all actual loads. Apply a virtual unit load of $1\text{ kN}$ vertically upwards at support $B$. 
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.95]
+    % Members
+    \draw[line width=1.5pt, fill=white] (0,6) rectangle (0.2,0); % Column AC
+    \draw[line width=1.5pt, fill=white] (0,6) rectangle (8,6.2); % Beam CE
+    \draw[line width=1.5pt, fill=white] (7.8,6.2) rectangle (8,0.2); % Column EB
+    
+    % Fixed A
+    \draw[line width=1pt] (-0.5,0) -- (0.7,0);
+    \fill[pattern=north east lines] (-0.5,-0.3) rectangle (0.7,0);
+
+    % Unit load at B
+    \draw[-{Latex[length=3mm]}, red, line width=1.5pt] (8,-1.5) -- (8,0.2);
+    \node[right, red] at (8,-1) {$1\text{ kN}$};
+
+    % Reactions
+    \draw[-{Latex[length=3mm]}, green!60!black, line width=1pt] (-0.5,0) -- (-0.5,-1.5);
+    \node[left, green!60!black] at (-0.5,-1) {$1\text{ kN}\ (\downarrow)$};
+
+    \draw[-{Latex[length=3mm]}, green!60!black, line width=1pt] (0.2, -0.6) arc (0:-180:0.4);
+    \node[right, green!60!black] at (0.4, -0.6) {$8\text{ kNm}\ (\text{CW})$};
+
+    % Section a-a (Origin B)
+    \draw[blue, dashed, thick] (7.2,2.5) -- (8.8,2.5);
+    \node[right, blue] at (8.8,2.5) {a-a};
+    \draw[-{Latex}, blue, thick] (7.5,0.2) -- (7.5,2.5) node[midway, left] {$x$};
+    \draw[-{Latex}, blue, thick] (7.7,2.7) arc (0:180:0.4); % CCW on top face
+    \node[left, blue] at (6.8,3.2) {$m_{a\text{-}a}$};
+
+    % Section b-b (Origin E) - Separate x arrow
+    \draw[blue, dashed, thick] (6,5.2) -- (6,7.5);
+    \node[above, blue] at (6,7.5) {b-b};
+    \draw[-{Latex}, blue, thick] (8,6.8) -- (6,6.8) node[midway, above] {$x$};
+    \draw[-{Latex}, blue, thick] (5.8,5.8) arc (-90:90:0.4); % CCW on left face
+    \node[left, blue] at (5.4,5.8) {$m_{b\text{-}b}$};
+
+    % Section c-c (Origin E) - Separate x arrow
+    \draw[blue, dashed, thick] (2,4.5) -- (2,6.8);
+    \node[above, blue] at (2,6.8) {c-c};
+    \draw[-{Latex}, blue, thick] (8,5.0) -- (2,5.0) node[pos=0.7, below] {$x$};
+    \draw[-{Latex}, blue, thick] (1.8,5.8) arc (-90:90:0.4); % CCW on left face
+    \node[left, blue] at (1.4,5.8) {$m_{c\text{-}c}$};
+
+    % Section d-d (Origin A)
+    \draw[blue, dashed, thick] (-0.8,3) -- (0.8,3);
+    \node[right, blue] at (0.8,3) {d-d};
+    \draw[-{Latex}, blue, thick] (0.6,0) -- (0.6,3) node[midway, right] {$x$};
+    \draw[-{Latex}, blue, thick] (0.1,3.2) arc (0:180:0.4); % CCW on top face
+    \node[left, blue] at (-0.8,3.6) {$m_{d\text{-}d}$};
+
+    % Node labels
+    \node[above left=2pt]  at (0,6)   {$C$};
+    \node[below=2pt]       at (4,6)   {$D$};
+    \node[above right=2pt] at (8,6)   {$E$};
+    \node[right=4pt]       at (0,0.2) {$A$};
+    \node[left=4pt]        at (7.8,0.2) {$B$};
+\end{tikzpicture}
+\end{figure}
+
+Reactions for unit load:
+\begin{align*}
+    \Sigma F_x &= 0 \quad \Rightarrow a_x = 0 \\
+    \Sigma F_y &= 0 \quad (\uparrow +) \Rightarrow a_y + 1 = 0 \Rightarrow a_y = 1\text{ kN} \ (\downarrow) \\
+    \Sigma M_A &= 0 \quad (\circlearrowleft +) \Rightarrow m_A + 1(8) = 0 \Rightarrow m_A = -8\text{ kNm} \ (\text{CW})
+\end{align*}
+
+Moment equations ($m$) using the exact same local coordinate systems and CCW convention:
+\begin{itemize}
+    \item \textbf{Section a-a ($0 \le x \le 10$ m):} \quad $m_{a-a} = 0$
+    \item \textbf{Section b-b ($0 \le x \le 4$ m):} \quad $m_{b-b} + 1(x) = 0 \Rightarrow m_{b-b} = -x$
+    \item \textbf{Section c-c ($4 \le x \le 8$ m):} \quad $m_{c-c} + 1(x) = 0 \Rightarrow m_{c-c} = -x$
+    \item \textbf{Section d-d ($0 \le x \le 10$ m):} \quad $m_{d-d} - 8 = 0 \Rightarrow m_{d-d} = 8$
+\end{itemize}
+
+\section*{Calculation of Deflections}
+
+\subsection*{1. Primary Displacement ($\Delta_{B0}$)}
+Using the principle of virtual work, accounting for variable flexural rigidity ($I_{\text{col AC}} = 2I$, $I_{\text{beam}} = I$, $I_{\text{col EB}} = 2I$):
+\begin{align*}
+    1 \cdot \Delta_{B0} &= \int \frac{M m}{EI_{\text{member}}} dx = \int_{0}^{10} \frac{M_{a-a} m_{a-a}}{2EI} dx + \int_{0}^{4} \frac{M_{b-b} m_{b-b}}{EI} dx + \int_{4}^{8} \frac{M_{c-c} m_{c-c}}{EI} dx + \int_{0}^{10} \frac{M_{d-d} m_{d-d}}{2EI} dx
+\end{align*}
+Evaluating non-zero integrals:
+\begin{align*}
+    \int_{0}^{4} \frac{(750)(-x)}{EI} dx &= \frac{1}{EI} \left[ -375x^2 \right]_{0}^{4} = -\frac{6000}{EI} \\[10pt]
+    \int_{4}^{8} \frac{(390 + 90x)(-x)}{EI} dx &= \frac{1}{EI} \left[ -195x^2 - 30x^3 \right]_{4}^{8} \\
+    &= \frac{1}{EI} \left( (-12480 - 15360) - (-3120 - 1920) \right) = -\frac{22800}{EI} \\[10pt]
+    \int_{0}^{10} \frac{(-110 - 15x^2 + 0.5x^3)(8)}{2EI} dx &= \frac{4}{EI} \left[ -110x - 5x^3 + 0.125x^4 \right]_{0}^{10} \\
+    &= \frac{4}{EI} (-1100 - 5000 + 1250) = \frac{4}{EI} (-4850) = -\frac{19400}{EI}
+\end{align*}
+\begin{equation*}
+    \Delta_{B0} = \frac{-6000 - 22800 - 19400}{EI} = -\frac{48200}{EI}
+\end{equation*}
+
+\subsection*{2. Flexibility Coefficient ($\delta_{BB}$)}
+\begin{align*}
+    1 \cdot \delta_{BB} &= \int \frac{m^2}{EI_{\text{member}}} dx = \int_{0}^{8} \frac{(-x)^2}{EI} dx + \int_{0}^{10} \frac{(8)^2}{2EI} dx \\[10pt]
+    \delta_{BB} &= \frac{1}{EI} \left[ \frac{x^3}{3} \right]_{0}^{8} + \frac{1}{2EI} \left[ 64x \right]_{0}^{10} = \frac{512/3}{EI} + \frac{320}{EI} = \frac{1472}{3EI}
+\end{align*}
+
+\section*{Final Reactions}
+Substitute into the compatibility equation:
+\begin{align*}
+    \Delta_{B0} + R_B \cdot \delta_{BB} &= 0 \\
+    -\frac{48200}{EI} + R_B \left(\frac{1472}{3EI}\right) &= 0 \\
+    1472 R_B &= 144600 \quad \Rightarrow \quad R_B = 98.23\text{ kN}
+\end{align*}
+The positive sign confirms the redundant reaction $B_y$ acts \textbf{upward} ($98.23\text{ kN}$). Calculate remaining final reactions using superposition ($R_{\text{final}} = R_{\text{primary}} + R_B \cdot r_{\text{unit}}$):
+\begin{align*}
+    A_y &= 90 + (98.23)(-1) = -8.23\text{ kN} \quad \text{or} \quad 8.23\text{ kN} \ (\downarrow) \\
+    A_x &= 0 + (98.23)(0) = 0\text{ kN} \\
+    M_A &= 110 (\text{CCW}) + (98.23)(-8\text{ CCW}) = -675.87\text{ kNm} \quad \text{or} \quad 675.87\text{ kNm} \ (\text{CW})
+\end{align*}
+
+\section*{Shear Force Diagram (SFD) \& Bending Moment Diagram (BMD)}
+Using final reactions, the diagram equations are developed below.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9]
+    \node[above] at (4,7.4) {\textbf{Shear Force Diagram (SFD)}};
+    % Frame baseline (dashed)
+    \draw[dashed, gray] (0,6) -- (8,6);
+    \draw[dashed, gray] (0,6) -- (0,0);
+    \draw[dashed, gray] (8,6) -- (8,0);
+
+    % ---- Left Column AC SFD ----
+    \draw[blue, thick] (0,0) parabola bend (0,0) (1.5,6) -- (0,6);
+    \fill[blue, opacity=0.12] (0,0) parabola bend (0,0) (1.5,6) -- (0,6) -- cycle;
+    \node[right=2pt, blue] at (1.5,5) {$+150.00\text{ kN}$};
+
+    % ---- Right Column EB SFD ----
+    \draw[blue, thick] (8,0) -- (6.5,6) -- (8,6);
+    \fill[blue, opacity=0.12] (8,0) -- (6.5,6) -- (8,6) -- cycle;
+    \node[left=2pt, blue] at (6.5,5) {$+150.00\text{ kN}$};
+
+    % ---- Beam SFD ----
+    \draw[green!60!black, thick] (0,6) -- (0,5.85) -- (4,5.85) -- (4,4.5) -- (8,4.5) -- (8,6);
+    \fill[green!60!black, opacity=0.10] (0,6) -- (0,5.85) -- (4,5.85) -- (4,6) -- cycle;
+    \fill[green!60!black, opacity=0.10] (4,6) -- (4,4.5) -- (8,4.5) -- (8,6) -- cycle;
+    \node[below=2pt, green!60!black] at (2,5.85) {$-8.23\text{ kN}$};
+    \node[below=2pt, green!60!black] at (6,4.5) {$-98.23\text{ kN}$};
+
+    % Node labels
+    \node[left=5pt]        at (0,6)  {$C$};
+    \node[above left=2pt]  at (4,6)  {$D$};
+    \node[right=4pt]       at (8,6)  {$E$};
+    \node[right=4pt]       at (0,0)  {$A$};
+    \node[left=4pt]        at (8,0)  {$B$};
+\end{tikzpicture}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[scale=0.9]
+    \node[above] at (4,9.4) {\textbf{Bending Moment Diagram (BMD)}};
+    % Frame baseline (dashed)
+    \draw[dashed, gray] (0,6) -- (8,6);
+    \draw[dashed, gray] (0,6) -- (0,0);
+    \draw[dashed, gray] (8,6) -- (8,0);
+
+    % ---- Left Column AC BMD ----
+    \draw[blue, thick] (-1.5,0) -- (0,0);
+    \draw[blue, thick] (-1.5,0) .. controls (-0.5,3) and (0.6,4.5) .. (0.6,6) -- (0,6);
+    \fill[blue, opacity=0.12] (-1.5,0) .. controls (-0.5,3) and (0.6,4.5) .. (0.6,6) -- (0,6) -- (0,0) -- cycle;
+    \node[left=2pt, blue] at (-1.5,0.5) {$-675.87\text{ kNm}$};
+    \node[right=2pt, blue] at (0.6,5) {$+324.13\text{ kNm}$};
+
+    % ---- Right Column EB BMD ----
+    \draw[blue, thick] (8,0) parabola bend (8,0) (10,6) -- (8,6);
+    \fill[blue, opacity=0.12] (8,0) parabola bend (8,0) (10,6) -- (8,6) -- cycle;
+    \node[right=2pt, blue] at (10,5) {$-750.00\text{ kNm}$};
+
+    % ---- Beam BMD ----
+    \draw[orange, thick] (0,6) -- (0,6.5) -- (4,6.6) -- (8,7.3) -- (8,6);
+    \fill[orange, opacity=0.12] (0,6) -- (0,6.5) -- (4,6.6) -- (8,7.3) -- (8,6) -- cycle;
+    \node[above=2pt, orange] at (0,6.5) {$-324.13\text{ kNm}$};
+    \node[above=2pt, orange] at (4,6.6) {$-357.07\text{ kNm}$};
+    \node[above=2pt, orange] at (8,7.3) {$-750.00\text{ kNm}$};
+
+    % Node labels
+    \node[below left=2pt]  at (0,6)  {$C$};
+    \node[below=2pt]       at (4,6)  {$D$};
+    \node[below left=2pt]  at (8,6)  {$E$};
+    \node[right=4pt]       at (0,0)  {$A$};
+    \node[left=4pt]        at (8,0)  {$B$};
+\end{tikzpicture}
+\end{figure}
+
+\end{document}
