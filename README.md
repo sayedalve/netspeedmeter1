@@ -4,7 +4,7 @@
   <strong>A hyper-focused, lightweight, and modern internet speed meter for the Windows taskbar.</strong>
 </p>
 
-Internet Speed Meter is a strictly dedicated network utility that displays live **Upload (↑)** and **Download (↓)** speeds directly on your screen. Built with Python and PyQt6, it is designed for users who want clean, accurate network monitoring without the bloat of heavy hardware tracking.
+Internet Speed Meter is a strictly dedicated network utility that displays live **Upload (↑)** and **Download (↓)** speeds directly on your taskbar. Built with Python and PyQt6, it is designed for users who want clean, accurate network monitoring without the bloat of heavy hardware tracking.
 
 ---
 
