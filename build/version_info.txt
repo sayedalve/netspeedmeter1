@@ -1,7 +1,7 @@
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(1, 3, 1, 0),
-    prodvers=(1, 3, 1, 0),
+    filevers=(2, 0, 0, 0),
+    prodvers=(2, 0, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x40004,
@@ -12,14 +12,14 @@ VSVersionInfo(
   kids=[
     StringFileInfo(
       [
-        StringStruct('CompanyName', 'Erez C137'),
-        StringStruct('FileDescription', 'speed_core'),
-        StringStruct('FileVersion', '1.3.1.0'),
-        StringStruct('InternalName', 'speed_core'),
-        StringStruct('LegalCopyright', 'Copyright (c) Erez C137'),
-        StringStruct('OriginalFilename', 'speed_core.exe'),
-        StringStruct('ProductName', 'speed_core'),
-        StringStruct('ProductVersion', '1.3.1'),
+        StringStruct('CompanyName', 'Alve'),
+        StringStruct('FileDescription', 'Internet Speed Meter'),
+        StringStruct('FileVersion', '2.0.0.0'),
+        StringStruct('InternalName', 'Internet Speed Meter'),
+        StringStruct('LegalCopyright', 'Copyright (c) Alve'),
+        StringStruct('OriginalFilename', 'Internet Speed Meter.exe'),
+        StringStruct('ProductName', 'Internet Speed Meter'),
+        StringStruct('ProductVersion', '2.0.0'),
       ]
     ),
     VarFileInfo([VarStruct('Translation', [0x0409, 1252])])

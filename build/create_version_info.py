@@ -28,13 +28,13 @@ VSVersionInfo(
   kids=[
     StringFileInfo(
       [
-        StringStruct('CompanyName', 'Erez C137'),
-        StringStruct('FileDescription', 'speed_core'),
+        StringStruct('CompanyName', 'Alve'),
+        StringStruct('FileDescription', 'Internet Speed Meter'),
         StringStruct('FileVersion', '{version_full_str}'),
-        StringStruct('InternalName', 'speed_core'),
-        StringStruct('LegalCopyright', 'Copyright (c) Erez C137'),
-        StringStruct('OriginalFilename', 'speed_core.exe'),
-        StringStruct('ProductName', 'speed_core'),
+        StringStruct('InternalName', 'Internet Speed Meter'),
+        StringStruct('LegalCopyright', 'Copyright (c) Alve'),
+        StringStruct('OriginalFilename', 'Internet Speed Meter.exe'),
+        StringStruct('ProductName', 'Internet Speed Meter'),
         StringStruct('ProductVersion', '{version_str}'),
       ]
     ),
