@@ -611,8 +611,8 @@ def is_taskbar_visible(taskbar_info: Optional[TaskbarInfo]) -> bool:
         abd = APPBARDATA()
         abd.cbSize = ctypes.sizeof(abd)
         abd.hWnd = taskbar_info.hwnd
-        state_flags = windll.shell32.SHAppBarMessage(constants.shell.api.ABM_GETSTATE, byref(abd))
-        auto_hide_enabled = bool(state_flags & constants.shell.api.ABS_AUTOHIDE)
+        state_flags = windll.shell32.SHAppBarMessage(4, byref(abd)) # Replaced constants.shell.api.ABM_GETSTATE
+        auto_hide_enabled = bool(state_flags & 1) # Replaced constants.shell.api.ABS_AUTOHIDE
 
         if auto_hide_enabled:
             screen = taskbar_info.get_screen()

@@ -5,14 +5,15 @@ Constants for application metadata and lifecycle management.
 from typing import Final
 import netspeedtray
 
+
 class AppConstants:
     """Defines application metadata and the single-instance mutex name."""
-    APP_NAME: Final[str] = "NetSpeedTray"
+    APP_NAME: Final[str] = "Internet Speed Meter"
     VERSION: Final[str] = netspeedtray.__version__
-    MUTEX_NAME: Final[str] = "Global\\NetSpeedTray_SingleInstanceMutex"
+    MUTEX_NAME: Final[str] = "Global\\InternetSpeedMeter_SingleInstanceMutex"
     ICON_FILENAME: Final[str] = "NetSpeedTray.ico"
-    GITHUB_OWNER: Final[str] = "erez-c137"
-    GITHUB_REPO: Final[str] = "NetSpeedTray"
+    GITHUB_OWNER: Final[str] = "sayedalve"
+    GITHUB_REPO: Final[str] = "netspeedmeter1"
 
     def __init__(self) -> None:
         self.validate()
@@ -27,6 +28,7 @@ class AppConstants:
             raise ValueError("MUTEX_NAME must not be empty")
         if not self.ICON_FILENAME:
             raise ValueError("ICON_FILENAME must not be empty")
+
 
 # Singleton instance for easy access
 app = AppConstants()

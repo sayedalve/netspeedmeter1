@@ -1,14 +1,14 @@
 """
-SpeedSettings — lean settings dialog for the dedicated internet speed meter.
+Internet Speed Meter — Settings Dialog.
 
-Only exposes:
+Exposes only the controls relevant to a focused network speed meter:
   • Network adapter selection
-  • Speed units
+  • Speed units & decimal places
   • Startup behaviour
-  • Widget position settings
+  • Widget position / offset
   • Mini-graph toggle + opacity
 
-Everything related to CPU/GPU/RAM/temperature/power has been removed.
+Red & Black theme throughout. Hardware monitoring controls removed.
 """
 from __future__ import annotations
 
@@ -43,36 +43,226 @@ from PyQt6.QtWidgets import (
 from netspeedtray import constants
 from netspeedtray.core.startup_manager import StartupManager
 
-logger = logging.getLogger("NetSpeedTray.SpeedSettings")
+logger = logging.getLogger("InternetSpeedMeter.SpeedSettings")
 
+# ── Design tokens ─────────────────────────────────────────────────────────────
+_RED      = "#E53935"
+_RED_DIM  = "#B71C1C"
+_RED_BRIG = "#FF1744"
+_BG_BASE  = "#0D0D0D"
+_BG_SURF  = "#1A1A1A"
+_BG_CARD  = "#242424"
+_BORDER   = "#3A0000"
+_TEXT     = "#F5F5F5"
+_SUBTEXT  = "#9E9E9E"
+_ACCENT   = _RED
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Thin helper widgets
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Global QSS for the entire dialog ──────────────────────────────────────────
+_DIALOG_QSS = f"""
+    QDialog {{
+        background-color: {_BG_BASE};
+        color: {_TEXT};
+        font-family: "Segoe UI", "Segoe UI Variable";
+    }}
 
-class _Toggle(QCheckBox):
-    """Styled toggle switch (simple checkbox styled as a toggle)."""
-    pass
+    /* ── Tab bar ── */
+    QTabWidget::pane {{
+        border: 1px solid {_BORDER};
+        background-color: {_BG_SURF};
+    }}
+    QTabBar::tab {{
+        background-color: {_BG_BASE};
+        color: {_SUBTEXT};
+        padding: 8px 20px;
+        font-size: 12px;
+        border: none;
+        border-bottom: 2px solid transparent;
+    }}
+    QTabBar::tab:selected {{
+        color: {_RED};
+        font-weight: 700;
+        border-bottom: 2px solid {_RED};
+        background-color: {_BG_SURF};
+    }}
+    QTabBar::tab:hover:!selected {{
+        color: {_TEXT};
+        background-color: {_BG_CARD};
+    }}
 
+    /* ── Section / GroupBox ── */
+    QGroupBox {{
+        color: {_RED};
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        border: 1px solid {_BORDER};
+        border-radius: 6px;
+        margin-top: 14px;
+        padding-top: 8px;
+        background-color: {_BG_SURF};
+    }}
+    QGroupBox::title {{
+        subcontrol-origin: margin;
+        subcontrol-position: top left;
+        left: 10px;
+        padding: 0 6px;
+        background-color: {_BG_SURF};
+    }}
 
-class _Section(QGroupBox):
-    """Styled section box."""
-    def __init__(self, title: str, parent=None):
-        super().__init__(title, parent)
-        self.setStyleSheet("""
-            QGroupBox {
-                font-weight: 600;
-                border: 1px solid rgba(128,128,128,0.3);
-                border-radius: 6px;
-                margin-top: 10px;
-                padding-top: 6px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 4px;
-            }
-        """)
+    /* ── Labels ── */
+    QLabel {{
+        color: {_TEXT};
+        background-color: transparent;
+        font-size: 12px;
+    }}
+
+    /* ── CheckBox & RadioButton ── */
+    QCheckBox, QRadioButton {{
+        color: {_TEXT};
+        font-size: 12px;
+        spacing: 8px;
+        background-color: transparent;
+    }}
+    QCheckBox::indicator, QRadioButton::indicator {{
+        width: 14px;
+        height: 14px;
+        border: 1px solid #5A0000;
+        border-radius: 3px;
+        background-color: {_BG_CARD};
+    }}
+    QRadioButton::indicator {{
+        border-radius: 8px;
+    }}
+    QCheckBox::indicator:checked {{
+        background-color: {_RED};
+        border-color: {_RED};
+        image: none;
+    }}
+    QRadioButton::indicator:checked {{
+        background-color: {_TEXT};
+        border: 4px solid {_RED};
+        border-radius: 8px;
+    }}
+    QCheckBox::indicator:hover, QRadioButton::indicator:hover {{
+        border-color: {_RED_BRIG};
+    }}
+
+    /* ── Spin boxes ── */
+    QSpinBox, QDoubleSpinBox {{
+        background-color: {_BG_CARD};
+        color: {_TEXT};
+        border: 1px solid {_BORDER};
+        border-radius: 4px;
+        padding: 3px 6px;
+        font-size: 12px;
+        selection-background-color: {_RED_DIM};
+    }}
+    QSpinBox::up-button, QDoubleSpinBox::up-button,
+    QSpinBox::down-button, QDoubleSpinBox::down-button {{
+        background-color: {_BG_SURF};
+        border: none;
+        width: 16px;
+    }}
+    QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover,
+    QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
+        background-color: {_RED_DIM};
+    }}
+
+    /* ── ComboBox ── */
+    QComboBox {{
+        background-color: {_BG_CARD};
+        color: {_TEXT};
+        border: 1px solid {_BORDER};
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 12px;
+        selection-background-color: {_RED_DIM};
+    }}
+    QComboBox::drop-down {{
+        border: none;
+        width: 20px;
+    }}
+    QComboBox QAbstractItemView {{
+        background-color: {_BG_CARD};
+        color: {_TEXT};
+        border: 1px solid {_BORDER};
+        selection-background-color: {_RED_DIM};
+        outline: none;
+    }}
+
+    /* ── Slider ── */
+    QSlider::groove:horizontal {{
+        height: 4px;
+        background-color: #3A0000;
+        border-radius: 2px;
+    }}
+    QSlider::sub-page:horizontal {{
+        background-color: {_RED};
+        border-radius: 2px;
+    }}
+    QSlider::handle:horizontal {{
+        background-color: {_RED};
+        border: none;
+        width: 14px;
+        height: 14px;
+        margin: -5px 0;
+        border-radius: 7px;
+    }}
+    QSlider::handle:horizontal:hover {{
+        background-color: {_RED_BRIG};
+    }}
+
+    /* ── Buttons ── */
+    QPushButton {{
+        background-color: {_BG_CARD};
+        color: {_TEXT};
+        border: 1px solid {_BORDER};
+        border-radius: 4px;
+        padding: 5px 16px;
+        font-size: 12px;
+        min-height: 22px;
+    }}
+    QPushButton:hover {{
+        background-color: {_RED_DIM};
+        border-color: {_RED};
+    }}
+    QPushButton:pressed {{
+        background-color: {_RED};
+    }}
+
+    /* ── Dialog button box OK button gets accent styling ── */
+    QDialogButtonBox QPushButton[text="OK"] {{
+        background-color: {_RED};
+        color: #FFFFFF;
+        border-color: {_RED_DIM};
+        font-weight: 600;
+    }}
+    QDialogButtonBox QPushButton[text="OK"]:hover {{
+        background-color: {_RED_BRIG};
+    }}
+
+    /* ── ScrollArea ── */
+    QScrollArea {{
+        border: none;
+        background-color: transparent;
+    }}
+    QScrollBar:vertical {{
+        background-color: {_BG_BASE};
+        width: 6px;
+        margin: 0;
+    }}
+    QScrollBar::handle:vertical {{
+        background-color: #5A0000;
+        border-radius: 3px;
+        min-height: 20px;
+    }}
+    QScrollBar::handle:vertical:hover {{
+        background-color: {_RED};
+    }}
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+        height: 0;
+    }}
+"""
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -84,22 +274,24 @@ class _GeneralTab(QWidget):
         super().__init__()
         self._on_change = on_change
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
 
         # ── Startup ─────────────────────────────────────────────────────
-        startup_sec = _Section("Startup")
+        startup_sec = QGroupBox("STARTUP")
         startup_layout = QFormLayout(startup_sec)
+        startup_layout.setContentsMargins(10, 6, 10, 10)
 
-        self.start_with_windows = _Toggle("Launch with Windows")
+        self.start_with_windows = QCheckBox("Launch with Windows")
         self.start_with_windows.setChecked(startup_enabled)
         self.start_with_windows.toggled.connect(self._on_change)
         startup_layout.addRow(self.start_with_windows)
         layout.addWidget(startup_sec)
 
         # ── Update Rate ──────────────────────────────────────────────────
-        rate_sec = _Section("Update rate")
+        rate_sec = QGroupBox("UPDATE RATE")
         rate_layout = QFormLayout(rate_sec)
+        rate_layout.setContentsMargins(10, 6, 10, 10)
 
         self.update_rate = QDoubleSpinBox()
         self.update_rate.setRange(0.25, 5.0)
@@ -112,38 +304,43 @@ class _GeneralTab(QWidget):
         layout.addWidget(rate_sec)
 
         # ── Widget Position ──────────────────────────────────────────────
-        pos_sec = _Section("Widget position")
+        pos_sec = QGroupBox("WIDGET POSITION")
         pos_layout = QFormLayout(pos_sec)
+        pos_layout.setContentsMargins(10, 6, 10, 10)
 
-        self.free_move = _Toggle("Free move  (drag widget anywhere)")
+        self.free_move = QCheckBox("Free move  (drag widget anywhere)")
         self.free_move.setChecked(bool(cfg.get("free_move", False)))
         self.free_move.toggled.connect(self._toggle_free_move)
         pos_layout.addRow(self.free_move)
 
-        self.lock_position = _Toggle("Lock position  (remember last spot)")
+        self.lock_position = QCheckBox("Lock position  (remember last spot)")
         self.lock_position.setChecked(bool(cfg.get("lock_position", False)))
         self.lock_position.toggled.connect(self._on_change)
         pos_layout.addRow(self.lock_position)
 
-        self.keep_visible_fullscreen = _Toggle("Keep visible in fullscreen apps")
+        self.keep_visible_fullscreen = QCheckBox("Keep visible in fullscreen apps")
         self.keep_visible_fullscreen.setChecked(bool(cfg.get("keep_visible_fullscreen", False)))
         self.keep_visible_fullscreen.toggled.connect(self._on_change)
         pos_layout.addRow(self.keep_visible_fullscreen)
 
         offset_row = QHBoxLayout()
-        self.tray_offset_x = QSpinBox(); self.tray_offset_x.setRange(0, 500)
+        self.tray_offset_x = QSpinBox()
+        self.tray_offset_x.setRange(0, 500)
         self.tray_offset_x.setValue(int(cfg.get("tray_offset_x", 0)))
         self.tray_offset_x.setSuffix(" px")
         self.tray_offset_x.valueChanged.connect(self._on_change)
 
-        self.tray_offset_y = QSpinBox(); self.tray_offset_y.setRange(0, 500)
+        self.tray_offset_y = QSpinBox()
+        self.tray_offset_y.setRange(0, 500)
         self.tray_offset_y.setValue(int(cfg.get("tray_offset_y", 3)))
         self.tray_offset_y.setSuffix(" px")
         self.tray_offset_y.valueChanged.connect(self._on_change)
 
-        offset_row.addWidget(QLabel("X:")); offset_row.addWidget(self.tray_offset_x)
-        offset_row.addSpacing(12)
-        offset_row.addWidget(QLabel("Y:")); offset_row.addWidget(self.tray_offset_y)
+        offset_row.addWidget(QLabel("X:"))
+        offset_row.addWidget(self.tray_offset_x)
+        offset_row.addSpacing(14)
+        offset_row.addWidget(QLabel("Y:"))
+        offset_row.addWidget(self.tray_offset_y)
         offset_row.addStretch()
         pos_layout.addRow("Tray offset:", offset_row)
 
@@ -175,16 +372,18 @@ class _NetworkTab(QWidget):
         super().__init__()
         self._on_change = on_change
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
 
         # ── Adapter selection ────────────────────────────────────────────
-        adapter_sec = _Section("Network adapter")
+        adapter_sec = QGroupBox("NETWORK ADAPTER")
         adapter_layout = QVBoxLayout(adapter_sec)
+        adapter_layout.setContentsMargins(10, 6, 10, 10)
+        adapter_layout.setSpacing(6)
 
-        self._mode_auto     = QRadioButton("Auto (primary internet adapter)")
+        self._mode_auto     = QRadioButton("Auto  (primary internet adapter)")
         self._mode_physical = QRadioButton("All physical adapters")
-        self._mode_all      = QRadioButton("All adapters (including virtual)")
+        self._mode_all      = QRadioButton("All adapters  (including virtual)")
         self._mode_selected = QRadioButton("Specific adapter(s)")
 
         mode = cfg.get("interface_mode", "auto_primary")
@@ -204,6 +403,7 @@ class _NetworkTab(QWidget):
         self._iface_container = QWidget()
         iface_layout = QVBoxLayout(self._iface_container)
         iface_layout.setContentsMargins(20, 4, 0, 4)
+        iface_layout.setSpacing(4)
         selected = set(cfg.get("selected_interfaces", []))
         for iface in available_interfaces:
             cb = QCheckBox(iface)
@@ -217,8 +417,9 @@ class _NetworkTab(QWidget):
         layout.addWidget(adapter_sec)
 
         # ── Speed units ──────────────────────────────────────────────────
-        units_sec = _Section("Display units")
+        units_sec = QGroupBox("DISPLAY UNITS")
         units_layout = QFormLayout(units_sec)
+        units_layout.setContentsMargins(10, 6, 10, 10)
 
         self.unit_type = QComboBox()
         for value, label in [
@@ -242,7 +443,7 @@ class _NetworkTab(QWidget):
         self.decimal_places.valueChanged.connect(self._on_change)
         units_layout.addRow("Decimal places:", self.decimal_places)
 
-        self.swap_upload_download = _Toggle("Show download on top")
+        self.swap_upload_download = QCheckBox("Show download on top")
         self.swap_upload_download.setChecked(bool(cfg.get("swap_upload_download", False)))
         self.swap_upload_download.toggled.connect(self._on_change)
         units_layout.addRow(self.swap_upload_download)
@@ -262,7 +463,6 @@ class _NetworkTab(QWidget):
 
     def update_interfaces(self, available_interfaces: List[str]) -> None:
         container_layout = self._iface_container.layout()
-        # Clear existing
         while container_layout.count():
             item = container_layout.takeAt(0)
             if item.widget():
@@ -277,11 +477,11 @@ class _NetworkTab(QWidget):
     def collect(self) -> Dict[str, Any]:
         selected = [iface for iface, cb in self._interface_checks.items() if cb.isChecked()]
         return {
-            "interface_mode":      self._interface_mode(),
-            "selected_interfaces": selected,
-            "unit_type":           self.unit_type.currentData(),
-            "decimal_places":      self.decimal_places.value(),
-            "swap_upload_download":self.swap_upload_download.isChecked(),
+            "interface_mode":       self._interface_mode(),
+            "selected_interfaces":  selected,
+            "unit_type":            self.unit_type.currentData(),
+            "decimal_places":       self.decimal_places.value(),
+            "swap_upload_download": self.swap_upload_download.isChecked(),
         }
 
 
@@ -294,14 +494,15 @@ class _AppearanceTab(QWidget):
         super().__init__()
         self._on_change = on_change
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(10)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
 
         # ── Mini-graph ───────────────────────────────────────────────────
-        graph_sec = _Section("Mini-graph")
+        graph_sec = QGroupBox("MINI GRAPH")
         graph_layout = QFormLayout(graph_sec)
+        graph_layout.setContentsMargins(10, 6, 10, 10)
 
-        self.graph_enabled = _Toggle("Show speed graph behind text")
+        self.graph_enabled = QCheckBox("Show speed graph behind text")
         self.graph_enabled.setChecked(bool(cfg.get("graph_enabled", False)))
         self.graph_enabled.toggled.connect(self._on_change)
         graph_layout.addRow(self.graph_enabled)
@@ -311,6 +512,7 @@ class _AppearanceTab(QWidget):
         self.graph_opacity.setValue(int(cfg.get("graph_opacity", 66)))
         self.graph_opacity.valueChanged.connect(self._on_change)
         self._graph_opacity_label = QLabel(f"{self.graph_opacity.value()}%")
+        self._graph_opacity_label.setFixedWidth(36)
         self.graph_opacity.valueChanged.connect(
             lambda v: self._graph_opacity_label.setText(f"{v}%")
         )
@@ -329,14 +531,16 @@ class _AppearanceTab(QWidget):
         layout.addWidget(graph_sec)
 
         # ── Background ───────────────────────────────────────────────────
-        bg_sec = _Section("Background")
+        bg_sec = QGroupBox("WIDGET BACKGROUND")
         bg_layout = QFormLayout(bg_sec)
+        bg_layout.setContentsMargins(10, 6, 10, 10)
 
         self.background_opacity = QSlider(Qt.Orientation.Horizontal)
         self.background_opacity.setRange(0, 100)
         self.background_opacity.setValue(int(cfg.get("background_opacity", 0)))
         self.background_opacity.valueChanged.connect(self._on_change)
         self._bg_opacity_label = QLabel(f"{self.background_opacity.value()}%")
+        self._bg_opacity_label.setFixedWidth(36)
         self.background_opacity.valueChanged.connect(
             lambda v: self._bg_opacity_label.setText(f"{v}%")
         )
@@ -363,9 +567,9 @@ class _AppearanceTab(QWidget):
 
 class SpeedSettingsDialog(QDialog):
     """
-    Focused settings dialog for the internet speed meter.
-    Emits settings_changed(dict) on every live change so the widget
-    can preview instantly, then saves on OK / Apply.
+    Focused settings dialog for Internet Speed Meter.
+    Emits settings_changed(dict) on every live change for instant preview,
+    then saves on OK / Apply.
     """
     settings_changed = pyqtSignal(dict)
 
@@ -378,19 +582,19 @@ class SpeedSettingsDialog(QDialog):
         parent=None,
     ):
         super().__init__(parent)
-        self._main_widget = main_widget
-        self._config      = config.copy()
-        self._startup_mgr = StartupManager()
+        self._main_widget     = main_widget
+        self._config          = config.copy()
+        self._startup_mgr     = StartupManager()
         self._startup_enabled = is_startup_enabled
 
-        self.setWindowTitle("NetSpeedMeter — Settings")
-        self.setMinimumWidth(420)
+        self.setWindowTitle("Internet Speed Meter — Settings")
+        self.setMinimumWidth(440)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowType.WindowContextHelpButtonHint)
 
         self._build_ui(available_interfaces)
-        self._apply_stylesheet()
+        self.setStyleSheet(_DIALOG_QSS)
 
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────── #
 
     def _build_ui(self, available_interfaces: List[str]) -> None:
         layout = QVBoxLayout(self)
@@ -410,30 +614,18 @@ class SpeedSettingsDialog(QDialog):
 
         layout.addWidget(tabs)
 
-        # Button row
         btn_box = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok
             | QDialogButtonBox.StandardButton.Cancel
             | QDialogButtonBox.StandardButton.Apply
         )
-        btn_box.setContentsMargins(12, 8, 12, 12)
+        btn_box.setContentsMargins(14, 8, 14, 12)
         btn_box.accepted.connect(self._on_ok)
         btn_box.rejected.connect(self.reject)
         btn_box.button(QDialogButtonBox.StandardButton.Apply).clicked.connect(self._on_apply)
         layout.addWidget(btn_box)
 
-    def _apply_stylesheet(self) -> None:
-        self.setStyleSheet("""
-            QTabWidget::pane { border: none; }
-            QTabBar::tab {
-                padding: 8px 18px;
-                font-size: 12px;
-            }
-            QTabBar::tab:selected { font-weight: 600; }
-            QDialogButtonBox { padding: 4px; }
-        """)
-
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────── #
 
     def _collect_all(self) -> Dict[str, Any]:
         cfg = {}
@@ -443,12 +635,10 @@ class SpeedSettingsDialog(QDialog):
         return cfg
 
     def _on_any_change(self, *_) -> None:
-        """Emit a live preview — caller should NOT save to disk."""
         self.settings_changed.emit(self._collect_all())
 
     def _on_apply(self) -> None:
         collected = self._collect_all()
-        # Handle startup toggle separately (registry side-effect)
         new_startup = self._general_tab.start_with_windows.isChecked()
         if new_startup != self._startup_enabled:
             try:
@@ -464,14 +654,11 @@ class SpeedSettingsDialog(QDialog):
         self._on_apply()
         self.accept()
 
-    # ------------------------------------------------------------------ #
+    # ─────────────────────────────────────────────────────────────────── #
 
     def reset_with_config(self, config: Dict[str, Any], is_startup_enabled: bool) -> None:
-        """Re-populate all controls from a fresh config dict."""
-        self._config = config.copy()
+        self._config          = config.copy()
         self._startup_enabled = is_startup_enabled
-        # Re-build tabs in-place is complex — simplest: close and let main widget re-open.
-        # For now just update the controls we can reach easily.
 
     def update_interface_list(self, available_interfaces: List[str]) -> None:
         self._network_tab.update_interfaces(available_interfaces)

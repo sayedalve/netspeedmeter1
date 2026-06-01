@@ -1,13 +1,10 @@
 """
-NetSpeedMeter — dedicated internet speed meter entry point.
+Internet Speed Meter — dedicated internet speed meter entry point.
 
-This replaces the full NetSpeedTray monitor.py.  All hardware monitoring
-(CPU / GPU / RAM / temperature / power / app-activity) has been removed.
-Only network upload/download speeds remain.
+All hardware monitoring (CPU / GPU / RAM / temperature / power / app-activity)
+has been removed. Only network upload/download speeds remain.
 """
 
-# matplotlib is only used in the graph window (which we've removed), but the
-# import below is kept as a safety guard — other modules may import it lazily.
 try:
     import matplotlib
     matplotlib.use("QtAgg")
@@ -36,8 +33,6 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from netspeedtray import constants
 from netspeedtray.utils.config import ConfigManager, ConfigError
 from netspeedtray.utils.taskbar_utils import get_taskbar_height
-
-# ─── Use the new focused widget instead of the old bloated one ───────────────
 from netspeedtray.views.speed_widget import NetSpeedMeterWidget
 
 
@@ -50,7 +45,7 @@ class SingleInstanceChecker:
 
     def __init__(self):
         self.mutex = None
-        self.logger = logging.getLogger("NetSpeedMeter.SingleInstance")
+        self.logger = logging.getLogger("InternetSpeedMeter.SingleInstance")
         try:
             self.mutex = win32event.CreateMutex(None, False, constants.app.MUTEX_NAME)
             if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
@@ -68,7 +63,7 @@ class SingleInstanceChecker:
             try:
                 win32api.CloseHandle(self.mutex)
             except win32api.error as e:
-                logging.getLogger("NetSpeedMeter.SingleInstance").error(
+                logging.getLogger("InternetSpeedMeter.SingleInstance").error(
                     "Failed to release mutex: %s", e
                 )
 
@@ -97,7 +92,7 @@ def _set_working_directory() -> None:
 def main() -> int:
     _set_working_directory()
     ConfigManager.setup_logging()
-    logger = logging.getLogger("NetSpeedMeter.Main")
+    logger = logging.getLogger("InternetSpeedMeter.Main")
 
     def _excepthook(exc_type, exc_value, exc_tb):
         logger.critical("Unhandled exception:", exc_info=(exc_type, exc_value, exc_tb))
@@ -110,7 +105,7 @@ def main() -> int:
     if "--shutdown" in sys.argv:
         logger.info("Shutdown command received — broadcasting WM_USER_SHUTDOWN.")
         try:
-            msg = win32gui.RegisterWindowMessageW("NetSpeedTray_WM_SHUTDOWN")
+            msg = win32gui.RegisterWindowMessageW("InternetSpeedMeter_WM_SHUTDOWN")
             win32gui.PostMessage(win32con.HWND_BROADCAST, msg, 0, 0)
             return 0
         except Exception as e:
@@ -123,8 +118,6 @@ def main() -> int:
             config_manager = ConfigManager()
             config         = config_manager.load()
 
-            # Build a minimal i18n shim — the new widget barely uses it but
-            # TrayIconManager / PositionManager still reference a few strings.
             i18n = constants.i18n.get_i18n(config.get("language"))
 
             taskbar_height = get_taskbar_height()
@@ -157,7 +150,7 @@ def main() -> int:
         logger.critical("Critical startup error: %s", e, exc_info=True)
         QMessageBox.critical(
             None,
-            "NetSpeedMeter — Error",
+            "Internet Speed Meter — Error",
             f"A critical error occurred and the application must close:\n\n{e}",
         )
         return 1

@@ -1,104 +1,91 @@
+"""
+Widget Theme Manager for Internet Speed Meter.
+
+The app ships with a fixed Red & Black identity — color_is_automatic is always
+False in the default config (set in Batch 1's constants/config.py), so the
+auto-theme registry dance is bypassed entirely.  This module is retained for
+structural compatibility; on_theme_changed() simply triggers a repaint.
+"""
 
 import logging
-import winreg
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PyQt6.QtGui import QColor
 
 from netspeedtray import constants
 
 if TYPE_CHECKING:
-    from netspeedtray.views.widget.main import NetworkSpeedWidget
+    from netspeedtray.views.speed_widget import NetSpeedMeterWidget
+
+# Fixed Red & Black palette (mirrors constants/color.py Batch 1 values)
+_RED_PRIMARY = "#E53935"
+
 
 class WidgetThemeManager:
     """
-    Manages theme synchronization (Light/Dark mode) for the NetworkSpeedWidget.
-    Handles registry checks and auto-color updates.
+    Manages theme synchronization for NetSpeedMeterWidget.
+
+    Because Internet Speed Meter uses a fixed Red & Black design, the
+    Windows Light/Dark mode auto-color logic has been removed.  If the
+    user explicitly enables color_is_automatic in Settings (advanced use),
+    the default_color in config is still respected as-is.
     """
 
-    def __init__(self, widget: "NetworkSpeedWidget"):
+    def __init__(self, widget: "NetSpeedMeterWidget"):
         self.widget = widget
-        self.logger = logging.getLogger(f"{constants.app.APP_NAME}.ThemeManager")
+        self.logger = logging.getLogger("InternetSpeedMeter.ThemeManager")
 
     def apply_theme_aware_defaults(self) -> None:
         """
-        Synchronizes the widget's text color with the Windows theme on startup,
-        but ONLY if the user has not manually set a color.
+        Ensures the widget uses the Red primary color on startup.
+
+        If color_is_automatic is False (the default for Internet Speed Meter),
+        this is a no-op — the color already set in the config is used directly.
+        If somehow color_is_automatic is True, we still force red so the
+        Windows Light/Dark mode never overrides our brand color.
         """
         try:
             config = self.widget.config
-            is_automatic = config.get("color_is_automatic", True)
+            is_automatic = config.get("color_is_automatic", False)
 
             if not is_automatic:
-                self.logger.info("User has set a manual color. Skipping auto-theme sync.")
+                # Explicit color — nothing to adjust
+                self.logger.debug("color_is_automatic=False; keeping configured color.")
                 return
 
-            # Check Windows Theme
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
-            system_uses_light_theme, _ = winreg.QueryValueEx(key, "SystemUsesLightTheme")
-            winreg.CloseKey(key)
-
-            correct_color = constants.color.BLACK if system_uses_light_theme == 1 else constants.color.WHITE
-            
+            # Automatic mode: pin to Red regardless of Windows theme
             current_color = config.get("default_color", "")
-
-            if current_color.upper() != correct_color.upper():
-                theme_name = "Light" if system_uses_light_theme == 1 else "Dark"
+            if current_color.upper() != _RED_PRIMARY.upper():
                 self.logger.debug(
-                    f"Windows theme is {theme_name}, auto-color was {current_color}. Correcting to {correct_color}."
+                    "color_is_automatic=True but color was %s; pinning to %s.",
+                    current_color, _RED_PRIMARY,
                 )
                 updates = {
-                    "default_color": correct_color,
-                    "color_is_automatic": True
+                    "default_color": _RED_PRIMARY,
+                    "color_is_automatic": False,   # lock it so it won't drift again
                 }
                 config.update(updates)
                 self.widget.update_config(updates)
 
         except Exception as e:
-            self.logger.warning(f"Could not perform theme-aware color sync: {e}")
+            self.logger.warning("apply_theme_aware_defaults failed: %s", e)
 
     def on_theme_changed(self) -> None:
-        """Handles Windows theme change (Light/Dark mode)."""
-        self.logger.debug("Theme change detected. Refreshing styles.")
-        self.apply_theme_aware_defaults()
+        """
+        Handles Windows theme-change events.
+
+        Internet Speed Meter has a fixed Red & Black color identity, so we
+        do not alter the widget color on theme changes — we just trigger a
+        repaint to keep the display fresh.
+        """
+        self.logger.debug("Windows theme change detected — repainting (color unchanged).")
         self.widget.update()
 
     def update_color_for_live_theme(self) -> None:
         """
-        Checks the current Windows shell (taskbar) theme and updates the widget's
-        text color in real-time (in-memory only).
+        Legacy method retained for call-site compatibility.
+
+        The live-theme registry check is not needed for Internet Speed Meter's
+        fixed color scheme.  This is intentionally a no-op.
         """
-        self.logger.debug("Executing live theme color update check...")
-        try:
-            if not self.widget.config.get("color_is_automatic", True):
-                return
-
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
-            system_uses_light_theme, _ = winreg.QueryValueEx(key, "SystemUsesLightTheme")
-            winreg.CloseKey(key)
-
-            if system_uses_light_theme == 1:
-                target_color_hex = constants.color.BLACK
-                theme_name = "Light"
-            else:
-                target_color_hex = constants.config.defaults.DEFAULT_COLOR
-                theme_name = "Dark"
-            
-            current_color = self.widget.config.get("default_color", constants.config.defaults.DEFAULT_COLOR)
-            
-            if current_color.upper() != target_color_hex.upper():
-                self.logger.info(f"Windows shell theme changed to {theme_name}. Updating text color to {target_color_hex}.")
-                
-                # Update in-memory config only
-                self.widget.config["default_color"] = target_color_hex
-                
-                # Propagate to renderer
-                if hasattr(self.widget, 'renderer'):
-                    self.widget.renderer.update_config(self.widget.config)
-                
-                self.widget.update()
-            
-        except FileNotFoundError:
-             self.logger.warning("Could not find theme registry key for live update.")
-        except Exception as e:
-            self.logger.error(f"Failed to perform live theme color update: {e}", exc_info=True)
+        pass

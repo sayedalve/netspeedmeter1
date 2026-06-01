@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPen
 
-logger = logging.getLogger("NetSpeedTray.SpeedRenderer")
+logger = logging.getLogger("InternetSpeedMeter.SpeedRenderer")
 
 UNIT_DIVISORS = {
     "bits_decimal":  {"mb": 1_000_000, "kb": 1_000,  "label_mb": "Mbps", "label_kb": "Kbps", "label_b": "bps"},
@@ -19,10 +19,13 @@ UNIT_DIVISORS = {
     "bytes_binary":  {"mb": 1_048_576, "kb": 1_024,  "label_mb": "MiB/s","label_kb": "KiB/s","label_b": "B/s"},
 }
 
+# Red & Black theme palette (mirrors constants/color.py Batch 1 values)
+_RED_PRIMARY = "#E53935"
+
 @dataclass
 class SpeedRenderConfig:
     unit_type: str = "bits_decimal"
-    default_color: str = "#ffffff"
+    default_color: str = _RED_PRIMARY
     font_family: str = "Segoe UI"
     font_size: int = 9
     font_weight: int = 400
@@ -31,8 +34,8 @@ class SpeedRenderConfig:
     color_coding: bool = False
     high_speed_threshold: float = 10.0
     low_speed_threshold: float = 1.0
-    high_speed_color: str = "#4ade80"
-    low_speed_color: str = "#fb923c"
+    high_speed_color: str = "#FF1744"
+    low_speed_color: str = "#B71C1C"
     background_color: str = "#000000"
     background_opacity: float = 0.0
     graph_enabled: bool = False
@@ -46,7 +49,7 @@ class SpeedRenderConfig:
         raw_graph_opacity = cfg.get("graph_opacity", 66)
         return cls(
             unit_type=str(cfg.get("unit_type", "bits_decimal")),
-            default_color=str(cfg.get("default_color", "#ffffff")),
+            default_color=str(cfg.get("default_color", _RED_PRIMARY)),
             font_family=str(cfg.get("font_family", "Segoe UI")),
             font_size=int(cfg.get("font_size", 9)),
             font_weight=int(cfg.get("font_weight", 400)),
@@ -55,8 +58,8 @@ class SpeedRenderConfig:
             color_coding=bool(cfg.get("color_coding", False)),
             high_speed_threshold=float(cfg.get("high_speed_threshold", 10.0)),
             low_speed_threshold=float(cfg.get("low_speed_threshold", 1.0)),
-            high_speed_color=str(cfg.get("high_speed_color", "#4ade80")),
-            low_speed_color=str(cfg.get("low_speed_color", "#fb923c")),
+            high_speed_color=str(cfg.get("high_speed_color", "#FF1744")),
+            low_speed_color=str(cfg.get("low_speed_color", "#B71C1C")),
             background_color=str(cfg.get("background_color", "#000000")),
             background_opacity=max(0.0, min(1.0, float(raw_bg_opacity) / 100.0)),
             graph_enabled=bool(cfg.get("graph_enabled", False)),
@@ -147,12 +150,10 @@ class SpeedRenderer:
             top_bytes, bot_bytes = upload_bytes, download_bytes
             top_arrow, bot_arrow = self.UP_ARROW, self.DOWN_ARROW
 
-        # --- VERTICAL CLUSTERING LOGIC ---
         row_h = self._metrics.height()
-        line_spacing = -1  # Brings the texts slightly closer together
+        line_spacing = -1  
         total_block_h = (row_h * 2) + line_spacing
         
-        # Find the mathematical center of the widget, then offset by half our block height
         start_y = (height - total_block_h) // 2
         
         top_baseline = start_y + self._metrics.ascent()
@@ -160,7 +161,6 @@ class SpeedRenderer:
 
         self._draw_row_at(painter, width, top_baseline, top_arrow, top_bytes, not cfg.swap_upload_download)
         self._draw_row_at(painter, width, bot_baseline, bot_arrow, bot_bytes, cfg.swap_upload_download)
-
 
     def _build_fonts(self) -> None:
         cfg = self.cfg
@@ -194,7 +194,15 @@ class SpeedRenderer:
     ) -> None:
         cfg = self.cfg
         val_str, unit_str = _format_speed_value(bytes_per_sec, cfg.unit_type, cfg.decimal_places)
-        color = self._speed_color(bytes_per_sec, is_upload)
+        
+        # Upload arrow gets the Red theme color, Download arrow gets forced to Green
+        if is_upload:
+            arrow_color = self._speed_color(bytes_per_sec, is_upload)
+        else:
+            arrow_color = QColor("#4ade80") # Bright, modern green
+            
+        # Text and Units stay pure white for readability
+        text_color = QColor("#FFFFFF")
 
         arrow_w = self._arrow_metrics.horizontalAdvance(arrow)
         val_w   = self._metrics.horizontalAdvance(val_str)
@@ -204,15 +212,17 @@ class SpeedRenderer:
         total_w  = arrow_w + gap + val_w + gap + unit_w
         x_start  = (widget_w - total_w) // 2
         
-        painter.setPen(color)
-
+        # 1. Draw Arrow (Red for Up, Green for Down)
+        painter.setPen(arrow_color)
         painter.setFont(self._arrow_font)
         painter.drawText(x_start, baseline_y, arrow)
 
+        # 2. Draw Value (White)
+        painter.setPen(text_color)
         painter.setFont(self._font)
         painter.drawText(x_start + arrow_w + gap, baseline_y, val_str)
 
-        # Draw units with the exact same color and opacity as the numbers
+        # 3. Draw Units (White, no opacity dimming)
         painter.drawText(x_start + arrow_w + gap + val_w + gap, baseline_y, unit_str)
 
     def _draw_graph(self, painter: QPainter, width: int, height: int) -> None:
@@ -237,15 +247,16 @@ class SpeedRenderer:
         path.lineTo(width, height)
         path.closeSubpath()
 
-        color = QColor(self.cfg.default_color)
-        color.setAlphaF(self.cfg.graph_opacity * 0.45)
-        painter.fillPath(path, color)
+        # Red fill: use the configured color (red by default) with dampened alpha
+        fill_color = QColor(self.cfg.default_color)
+        fill_color.setAlphaF(self.cfg.graph_opacity * 0.35)
+        painter.fillPath(path, fill_color)
 
-        pen = QPen(QColor(self.cfg.default_color))
-        pen.setWidthF(1.0)
+        # Red line: slightly more opaque than the fill
         line_color = QColor(self.cfg.default_color)
-        line_color.setAlphaF(self.cfg.graph_opacity * 0.8)
-        pen.setColor(line_color)
+        line_color.setAlphaF(self.cfg.graph_opacity * 0.75)
+        pen = QPen(line_color)
+        pen.setWidthF(1.0)
         painter.setPen(pen)
 
         line_path = QPainterPath()

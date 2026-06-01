@@ -1,5 +1,5 @@
 Folder PATH listing
-Volume serial number is 00000067 5683:E08F
+Volume serial number is 0000002E 5683:E08F
 C:.
 |   .gitignore
 |   changelog.md
@@ -9,8 +9,6 @@ C:.
 |   LICENSE
 |   privacy.md
 |   README-speedmeter.md
-|   requirements-speedmeter.in
-|   requirements.in
 |   requirements.txt
 |   signpath.yml
 |   
@@ -32,7 +30,6 @@ C:.
 |       build.bat
 |       create_version_info.py
 |       netspeedmeter.spec
-|       netspeedtray.spec
 |       setup.iss
 |       version_info.txt
 |       
@@ -61,7 +58,6 @@ C:.
 |       settings_1.2.5.png
 |       
 \---src
-    |   monitor.py
     |   speedmeter.py
     |   
     \---netspeedtray
@@ -72,16 +68,12 @@ C:.
         |   |   color.py
         |   |   config.py
         |   |   data.py
-        |   |   export.py
         |   |   fonts.py
         |   |   graph.py
         |   |   i18n.py
         |   |   layout.py
         |   |   logs.py
         |   |   network.py
-        |   |   renderer.py
-        |   |   shell.py
-        |   |   state.py
         |   |   styles.py
         |   |   taskbar.py
         |   |   timeouts.py
@@ -134,9 +126,7 @@ C:.
         |   |   position_manager.py
         |   |   startup_manager.py
         |   |   system_events.py
-        |   |   timer_manager.py
         |   |   tray_manager.py
-        |   |   update_checker.py
         |   |   widget_state.py
         |   |   __init__.py
         |   |   
@@ -197,10 +187,8 @@ C:.
         |           __init__.py
         |           
         +---utils
-        |   |   components.py
         |   |   config.py
         |   |   db_utils.py
-        |   |   exporters.py
         |   |   helpers.py
         |   |   network_utils.py
         |   |   rdp_utils.py
@@ -209,7 +197,6 @@ C:.
         |   |   taskbar_utils.py
         |   |   timer_utils.py
         |   |   visibility_manager.py
-        |   |   widget_renderer.py
         |   |   win_event_hook.py
         |   |   __init__.py
         |   |   
@@ -233,67 +220,8 @@ C:.
         |   |   speed_widget.py
         |   |   __init__.py
         |   |   
-        |   +---app_activity
-        |   |       window.py
-        |   |       worker.py
-        |   |       __init__.py
-        |   |       
-        |   +---graph
-        |   |   |   config_handler.py
-        |   |   |   controls.py
-        |   |   |   coordinator.py
-        |   |   |   interaction.py
-        |   |   |   logic.py
-        |   |   |   README.md
-        |   |   |   renderer.py
-        |   |   |   request.py
-        |   |   |   ui.py
-        |   |   |   window.py
-        |   |   |   worker.py
-        |   |   |   __init__.py
-        |   |   |   
-        |   |   \---__pycache__
-        |   |           config_handler.cpython-312.pyc
-        |   |           controls.cpython-312.pyc
-        |   |           coordinator.cpython-312.pyc
-        |   |           interaction.cpython-312.pyc
-        |   |           logic.cpython-312.pyc
-        |   |           renderer.cpython-312.pyc
-        |   |           request.cpython-312.pyc
-        |   |           ui.cpython-312.pyc
-        |   |           window.cpython-312.pyc
-        |   |           worker.cpython-312.pyc
-        |   |           __init__.cpython-312.pyc
-        |   |           
-        |   +---settings
-        |   |   |   dialog.py
-        |   |   |   __init__.py
-        |   |   |   
-        |   |   +---pages
-        |   |   |   |   appearance.py
-        |   |   |   |   colors.py
-        |   |   |   |   general.py
-        |   |   |   |   hardware.py
-        |   |   |   |   interfaces.py
-        |   |   |   |   units.py
-        |   |   |   |   __init__.py
-        |   |   |   |   
-        |   |   |   \---__pycache__
-        |   |   |           appearance.cpython-312.pyc
-        |   |   |           colors.cpython-312.pyc
-        |   |   |           general.cpython-312.pyc
-        |   |   |           hardware.cpython-312.pyc
-        |   |   |           interfaces.cpython-312.pyc
-        |   |   |           units.cpython-312.pyc
-        |   |   |           __init__.cpython-312.pyc
-        |   |   |           
-        |   |   \---__pycache__
-        |   |           dialog.cpython-312.pyc
-        |   |           __init__.cpython-312.pyc
-        |   |           
         |   +---widget
         |   |   |   layout.py
-        |   |   |   main.py
         |   |   |   theme.py
         |   |   |   __init__.py
         |   |   |   
