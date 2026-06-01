@@ -1,0 +1,610 @@
+"""
+Manages the application's data layer, including in-memory state and SQLite persistence.
+
+This module defines `WidgetState`, which acts as the main interface for the application's
+data, and `DatabaseWorker`, a dedicated QThread for all database write and maintenance
+operations to ensure the UI remains responsive.
+
+Key Features:
+- Manages an in-memory deque of recent speeds for the real-time mini-graph.
+- Stores granular, per-interface network speed data in a multi-tiered SQLite database.
+- Implements a multi-tier aggregation strategy:
+  - Per-second data is kept for 24 hours.
+  - Per-minute aggregates are kept for 30 days.
+  - Per-hour aggregates are kept for up to 1 year.
+- Handles user-configurable data retention with a 48-hour grace period for reductions.
+- Performs all database writes and maintenance (pruning, aggregation, VACUUM) in a
+  dedicated background thread to prevent UI blocking.
+- Guarantees data integrity through the use of atomic transactions.
+"""
+
+import logging
+import sqlite3
+import threading
+import time
+import shutil
+from collections import deque
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Deque, Dict, List, Optional, Tuple, Literal, Union
+
+from PyQt6.QtCore import QObject, QThread, pyqtSignal, QTimer
+
+from speed_core import constants
+from speed_core.constants import network, timeouts
+from speed_core.utils.helpers import get_app_data_path
+
+logger = logging.getLogger("speed_core.WidgetState")
+
+
+# --- Data Transfer Objects (DTOs) ---
+@dataclass(slots=True, frozen=True)
+class AggregatedSpeedData:
+    """Represents aggregated network speed data at a specific timestamp for the mini-graph."""
+    upload: float
+    download: float
+    timestamp: datetime
+
+
+@dataclass(slots=True, frozen=True)
+class SpeedDataSnapshot:
+    """Represents a snapshot of per-interface network speeds at a specific timestamp."""
+    speeds: Dict[str, Tuple[float, float]]
+    timestamp: datetime
+
+
+@dataclass(slots=True, frozen=True)
+class HardwareStatSnapshot:
+    """Represents a single hardware utilization data point."""
+    value: float
+    timestamp: datetime
+
+
+# --- Database Worker Thread ---
+from speed_core.core.database import DatabaseWorker
+
+
+class WidgetState(QObject):
+    """Manages all system statistics and bandwidth history for the Tray Widget."""
+
+    def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__()
+        self.logger = logger
+        self.config = config.copy()
+
+        # In-Memory Cache for real-time mini-graph
+        self.max_history_points: int = self._get_max_history_points()
+        self.in_memory_history: Deque[SpeedDataSnapshot] = deque(maxlen=self.max_history_points)
+        self.aggregated_history: Deque[AggregatedSpeedData] = deque(maxlen=self.max_history_points)
+        
+        # New: Hardware history for mini-graph tabs
+        self.cpu_history: Deque[HardwareStatSnapshot] = deque(maxlen=self.max_history_points)
+        self.gpu_history: Deque[HardwareStatSnapshot] = deque(maxlen=self.max_history_points)
+        
+        # Batching lists for database writes
+        self._db_batch: List[Tuple[int, str, float, float]] = []
+        self._hw_batch: List[Tuple[int, str, float]] = []
+
+        # Database Worker Thread
+        self._db_path = Path(get_app_data_path()) / "speed_history.db"
+        self.db_worker = DatabaseWorker(self._db_path)
+        self.db_worker.error.connect(lambda msg: self.logger.error("DB Worker Error: %s", msg))
+        self.db_worker.start()
+
+        # Timers for periodic operations
+        self.batch_persist_timer = QTimer(self)
+        self.batch_persist_timer.timeout.connect(self.flush_batch)
+        self.batch_persist_timer.start(10 * 1000) # Persist every 10 seconds
+
+        self.maintenance_timer = QTimer(self)
+        self.maintenance_timer.timeout.connect(self.trigger_maintenance)
+        self.maintenance_timer.start(60 * 60 * 1000) # Run maintenance every hour
+        
+        self.trigger_maintenance()
+
+        self._read_conns: Dict[int, sqlite3.Connection] = {}
+        self._read_conns_lock = threading.Lock()
+
+        self.logger.debug("WidgetState initialized with threaded database worker.")
+
+
+    def _get_read_conn(self) -> sqlite3.Connection:
+        """Returns a thread-local read-only database connection."""
+        thread_id = threading.get_ident()
+        with self._read_conns_lock:
+            if thread_id not in self._read_conns:
+                conn = sqlite3.connect(self._db_path, check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                self._read_conns[thread_id] = conn
+            return self._read_conns[thread_id]
+
+    def add_speed_data(self, speed_data: Dict[str, Tuple[float, float]], now: Optional[datetime] = None, aggregated_up: Optional[float] = None, aggregated_down: Optional[float] = None) -> None:
+        """Adds new per-interface speed data."""
+        _now = now or datetime.now()
+        self.in_memory_history.append(SpeedDataSnapshot(speeds=speed_data.copy(), timestamp=_now))
+
+        if aggregated_up is not None and aggregated_down is not None:
+            total_up, total_down = aggregated_up, aggregated_down
+        else:
+            total_up = sum(speeds[0] for speeds in speed_data.values())
+            total_down = sum(speeds[1] for speeds in speed_data.values())
+            
+        self.aggregated_history.append(AggregatedSpeedData(upload=total_up, download=total_down, timestamp=_now))
+
+        timestamp = int(_now.timestamp())
+        max_speed = network.interface.MAX_REASONABLE_SPEED_BPS
+        
+        for interface, (up_speed, down_speed) in speed_data.items():
+            if up_speed >= network.speed.MIN_RECORDABLE_SPEED_BPS or down_speed >= network.speed.MIN_RECORDABLE_SPEED_BPS:
+                self._db_batch.append((timestamp, interface, min(up_speed, max_speed), min(down_speed, max_speed)))
+
+
+    def add_hardware_stat(self, stat_type: str, value: float, now: Optional[datetime] = None) -> None:
+        """Adds new CPU or GPU utilization data point."""
+        _now = now or datetime.now()
+        snapshot = HardwareStatSnapshot(value=value, timestamp=_now)
+        
+        if stat_type == 'cpu':
+            self.cpu_history.append(snapshot)
+        elif stat_type == 'gpu':
+            self.gpu_history.append(snapshot)
+            
+        # Add to database batch (clamped 0-100)
+        self._hw_batch.append((int(_now.timestamp()), stat_type, max(0.0, min(100.0, value))))
+
+
+    def flush_batch(self) -> None:
+        """Sends all batches to the database worker."""
+        if self._db_batch:
+            self.db_worker.enqueue_task("persist_speed", self._db_batch.copy())
+            self._db_batch.clear()
+            
+        if self._hw_batch:
+            self.db_worker.enqueue_task("persist_hardware", self._hw_batch.copy())
+            self._hw_batch.clear()
+
+
+    def get_cpu_history(self) -> List[HardwareStatSnapshot]:
+        """Returns in-memory CPU utilization history."""
+        return list(self.cpu_history)
+
+
+    def get_gpu_history(self) -> List[HardwareStatSnapshot]:
+        """Returns in-memory GPU utilization history."""
+        return list(self.gpu_history)
+
+
+    def get_hardware_history(self, stat_type: str, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None) -> List[Tuple[datetime, float]]:
+        """
+        Retrieves historical hardware utilization data from the database.
+        Returns: A list of (timestamp, value) tuples.
+        """
+        if not hasattr(self, 'db_worker') or not self.db_worker:
+            return []
+
+        try:
+            conn = self._get_read_conn()
+            cursor = conn.cursor()
+            
+            _end = end_time or datetime.now()
+            _start = start_time or (_end - timedelta(hours=24))
+            
+            start_ts = int(_start.timestamp())
+            end_ts = int(_end.timestamp())
+            
+            # Pick the right tier: raw (<6h), minute (<30d), hour (>30d)
+            duration = end_ts - start_ts
+            if duration <= 6 * 3600:
+                table = constants.data.HARDWARE_STATS_TABLE_RAW
+                val_col = "value"
+            elif duration <= 30 * 86400:
+                table = constants.data.HARDWARE_STATS_TABLE_MINUTE
+                val_col = "avg_value"
+            else:
+                table = constants.data.HARDWARE_STATS_TABLE_HOUR
+                val_col = "avg_value"
+
+            query = f"SELECT timestamp, {val_col} FROM {table} WHERE stat_type = ? AND timestamp BETWEEN ? AND ? ORDER BY timestamp ASC"
+            cursor.execute(query, (stat_type, start_ts, end_ts))
+            
+            return [(datetime.fromtimestamp(row[0]), row[1]) for row in cursor.fetchall()]
+        except Exception as e:
+            self.logger.error("Error fetching hardware history: %s", e, exc_info=True)
+            return []
+
+
+    def get_total_bandwidth_for_period(self, start_time: Optional[datetime], end_time: Optional[datetime], interface_name: Optional[str] = None) -> Tuple[float, float]:
+        """
+        Calculates the total upload and download bandwidth for a given period
+        by running SUM queries across all data tiers.
+        """
+        if not hasattr(self, 'db_worker') or not self.db_worker:
+            return 0.0, 0.0
+
+        try:
+            conn = self._get_read_conn()
+            cursor = conn.cursor()
+            
+            start_ts = int(start_time.timestamp()) if start_time else 0
+            end_ts = int(end_time.timestamp())
+
+            total_up, total_down = 0.0, 0.0
+            
+            # Optimization: Only query tiers that could potentially have data for this range.
+            # Raw: last 2 days. Minute: last 32 days. Hour: all.
+            now_ts = int(datetime.now().timestamp())
+            
+            tiers = []
+            if start_ts <= now_ts: # Always check raw as it might have unaggregated data
+                tiers.append(("speed_history_raw", "upload_bytes_sec", "download_bytes_sec"))
+            
+            if start_ts < (now_ts - 24*3600): # Might have minute data
+                tiers.append(("speed_history_minute", "upload_avg * sample_count", "download_avg * sample_count"))
+                
+            if start_ts < (now_ts - 30*86400): # Might have hour data
+                tiers.append(("speed_history_hour", "upload_avg * sample_count", "download_avg * sample_count"))
+
+            for table, up_expr, down_expr in tiers:
+                query = f"SELECT SUM({up_expr}), SUM({down_expr}) FROM {table} WHERE timestamp BETWEEN ? AND ?"
+                params = [start_ts, end_ts]
+                
+                if interface_name and str(interface_name).lower() != "all":
+                    query += " AND interface_name = ?"
+                    params.append(interface_name)
+                
+                cursor.execute(query, params)
+                row = cursor.fetchone()
+                if row:
+                    total_up += (row[0] or 0.0)
+                    total_down += (row[1] or 0.0)
+
+            return total_up, total_down
+
+        except Exception as e:
+            self.logger.error("Error calculating total bandwidth: %s", e, exc_info=True)
+            return 0.0, 0.0
+
+
+    def get_in_memory_speed_history(self) -> List[SpeedDataSnapshot]:
+        """
+        Retrieves the current in-memory speed history.
+        
+        Returns:
+            A list of SpeedDataSnapshot objects, each containing a dictionary of
+            per-interface speeds for a specific timestamp.
+        """
+        return list(self.in_memory_history)
+
+
+    def get_aggregated_speed_history(self) -> List[AggregatedSpeedData]:
+        """
+        Retrieves the pre-calculated aggregated speed history.
+        This is optimized for the mini-graph renderer.
+        """
+        return list(self.aggregated_history)
+
+
+
+
+
+    def trigger_maintenance(self, now: Optional[datetime] = None) -> None:
+        """
+        Public method to enqueue a maintenance task for the database worker,
+        passing it the current application configuration.
+        """
+        self.logger.debug("Triggering periodic database maintenance.")
+        config = self.config.copy()
+        if now:
+            # Pass (config, now) tuple as expected by DatabaseWorker._execute_task
+            self.db_worker.enqueue_task("maintenance", (config, now))
+        else:
+            self.db_worker.enqueue_task("maintenance", config)
+
+
+    def update_retention_period(self) -> None:
+        """
+        To be called after the user changes the retention setting. This triggers
+        a maintenance run where the new config will be evaluated.
+        """
+        self.logger.info("User changed retention period. Triggering maintenance check.")
+        # We don't need to pass config here; the trigger method will grab the latest.
+        self.trigger_maintenance()
+
+
+    def get_speed_history(self, start_time: Optional[datetime] = None, end_time: Optional[datetime] = None, interface_name: Optional[str] = None, return_raw: bool = False, resolution: Literal['auto', 'raw', 'minute', 'hour', 'day'] = 'auto', _visited_resolutions: set = None) -> List[Tuple[Union[datetime, float], float, float]]:
+        """
+        Retrieves speed history by querying ALL relevant database tiers (raw, minute, hour)
+        and unifying them into a single timeline.
+        """
+        self.flush_batch()
+
+        # 1. Timeline Setup
+        _now_ts = int(datetime.now().timestamp())
+        _start_ts = int(start_time.timestamp()) if start_time else 0
+        _end_ts = int(end_time.timestamp()) if end_time else _now_ts
+        
+        # 2. Determine Resolution
+        target_res = resolution
+        if target_res == 'auto':
+            target_res = constants.data.history_period.get_target_resolution(start_time, end_time)
+
+        # Resolution -> Interval (seconds) mapping
+        # 'day' maps to 86400, others to their standard seconds
+        res_map = {'raw': 1, 'minute': 60, 'hour': 3600, 'day': 86400}
+        target_interval = res_map.get(target_res, 60)
+        
+        # 3. Build TARGETED Query (Single Table based on Resolution)
+        # For multi-tier queries (minute/hour), we query both the aggregated table AND raw table
+        # to ensure we capture recent data that hasn't been moved to aggregates yet.
+        is_all_ifaces = not interface_name or str(interface_name).lower() == "all"
+        
+        # Map resolution to primary table and columns
+        table_map = {
+            'raw': ("speed_history_raw", "upload_bytes_sec", "download_bytes_sec"),
+            'minute': ("speed_history_minute", "upload_avg", "download_avg"),
+            'hour': ("speed_history_hour", "upload_avg", "download_avg"),
+            'day': ("speed_history_hour", "upload_avg", "download_avg"),
+        }
+        
+        table, up_col, down_col = table_map.get(target_res, table_map['minute'])
+        
+        try:
+            conn = self._get_read_conn()
+            cursor = conn.cursor()
+            
+            # Time binning calculation
+            time_calc = f"CAST(timestamp / {target_interval} AS INTEGER) * {target_interval}"
+            
+            # Build inner query. For aggregated resolutions, construct a UNION
+            # and keep peak speed semantics (MAX) across tiers so timeline
+            # changes do not dilute/reshape the same event differently.
+            if target_res in ('minute', 'hour', 'day'):
+                # Multi-tier merge with explicit peak-preserving logic.
+                tier_queries = []
+                params = []
+
+                def add_tier_query(table_name: str, up_expr: str, down_expr: str) -> None:
+                    q = f"""
+                        SELECT
+                            {time_calc} as bin_ts,
+                            interface_name,
+                            {up_expr} as up,
+                            {down_expr} as down
+                        FROM {table_name}
+                        WHERE timestamp BETWEEN ? AND ?
+                    """
+                    tier_params = [_start_ts, _end_ts]
+                    if not is_all_ifaces:
+                        q += " AND interface_name = ?"
+                        tier_params.append(interface_name)
+                    tier_queries.append(q)
+                    params.extend(tier_params)
+
+                # Raw keeps exact per-second peaks.
+                add_tier_query(constants.data.SPEED_TABLE_RAW, "upload_bytes_sec", "download_bytes_sec")
+                # Aggregated tiers use preserved per-bucket maxima.
+                add_tier_query(constants.data.SPEED_TABLE_MINUTE, "upload_max", "download_max")
+
+                if target_res in ('hour', 'day'):
+                    add_tier_query(constants.data.SPEED_TABLE_HOUR, "upload_max", "download_max")
+
+                union_query = " UNION ALL ".join(tier_queries)
+                inner_query = f"""
+                    SELECT
+                        bin_ts,
+                        interface_name,
+                        MAX(up) as up,
+                        MAX(down) as down
+                    FROM ({union_query})
+                    GROUP BY bin_ts, interface_name
+                """
+            else:
+                # Raw resolution: single table query
+                inner_query = f"""
+                    SELECT 
+                        {time_calc} as bin_ts, 
+                        interface_name, 
+                        AVG({up_col}) as up, 
+                        AVG({down_col}) as down
+                    FROM {table}
+                    WHERE timestamp BETWEEN ? AND ?
+                """
+                params = [_start_ts, _end_ts]
+                if not is_all_ifaces:
+                    inner_query += " AND interface_name = ?"
+                    params.append(interface_name)
+                inner_query += " GROUP BY bin_ts, interface_name"
+                
+            # Outer query: aggregate bins
+            if is_all_ifaces:
+                outer_query = f"""
+                    SELECT bin_ts, COALESCE(SUM(up), 0), COALESCE(SUM(down), 0)
+                    FROM ({inner_query})
+                    GROUP BY bin_ts
+                    ORDER BY bin_ts
+                """
+            else:
+                outer_query = f"""
+                    SELECT bin_ts, COALESCE(AVG(up), 0), COALESCE(AVG(down), 0)
+                    FROM ({inner_query})
+                    GROUP BY bin_ts
+                    ORDER BY bin_ts
+                """
+            
+            cursor.execute(outer_query, tuple(params))
+            rows = cursor.fetchall()
+            self.logger.debug("History query: target_res=%s fetched_rows=%d", target_res, len(rows))
+            
+            # Convert rows to standard format (Timestamp, Up, Down)
+            valid_rows = [row for row in rows if row and row[0] is not None]
+            if len(valid_rows) != len(rows):
+                self.logger.warning(
+                    "Dropping %d invalid graph rows with NULL timestamp (resolution=%s).",
+                    len(rows) - len(valid_rows),
+                    target_res
+                )
+
+            data_points = []
+            if return_raw:
+                 data_points = [(int(row[0]), float(row[1] or 0.0), float(row[2] or 0.0)) for row in valid_rows]
+            else:
+                 data_points = [(datetime.fromtimestamp(int(row[0])), float(row[1] or 0.0), float(row[2] or 0.0)) for row in valid_rows]
+
+            # If targeted-table query returned no rows and we targeted an aggregated
+            # table (minute/hour/day), fall back to the more comprehensive
+            # optimized query in utils.db_utils which unions tiers. This allows
+            # freshly-started apps (with only raw data present) to still show
+            # historical ranges by reading directly from raw where appropriate.
+            if not data_points and target_res != 'raw':
+                try:
+                    from speed_core.utils.db_utils import get_speed_history as util_get_speed_history
+                    self.logger.debug("Targeted query returned no rows; falling back to unified DB query.")
+                    fallback = util_get_speed_history(self.db_worker.db_path, start_time=start_time, end_time=end_time, interface_name=interface_name)
+                    self.logger.debug("Fallback unified DB query returned %d rows", len(fallback) if fallback else 0)
+                    if fallback:
+                        if return_raw:
+                            data_points = [(int(dt.timestamp()), up, down) for dt, up, down in fallback]
+                        else:
+                            data_points = [(dt, up, down) for dt, up, down in fallback]
+                except Exception:
+                    self.logger.exception("Fallback unified DB query failed.")
+
+            # --- SMART Edge Padding (Zero-Fill) ---
+            # If no real data, create evenly-spaced zeros across the timeline.
+            # This prevents gap detection from splitting into single-point segments.
+            if start_time and end_time:
+                duration = (_end_ts - _start_ts)  # seconds
+                
+                if not data_points:
+                    # No real data: Generate synthetic flat baseline
+                    # 1 point per hour, min 10, max 100 for performance
+                    num_points = min(100, max(10, int(duration / 3600)))
+                    interval = duration / max(1, num_points - 1)
+                    
+                    for i in range(num_points):
+                        pt_ts = _start_ts + (i * interval)
+                        if return_raw:
+                            data_points.append((pt_ts, 0.0, 0.0))
+                        else:
+                            data_points.append((datetime.fromtimestamp(pt_ts), 0.0, 0.0))
+                else:
+                    # Has real data: Just ensure edges are covered
+                    s_pt = _start_ts if return_raw else start_time
+                    e_pt = _end_ts if return_raw else end_time
+                    
+                    if data_points[0][0] > s_pt:
+                        data_points.insert(0, (s_pt, 0.0, 0.0))
+                    if data_points[-1][0] < e_pt:
+                        data_points.append((e_pt, 0.0, 0.0))
+            
+            return data_points
+
+        except sqlite3.Error as e:
+            self.logger.error("Unified graph query failed: %s", e, exc_info=True)
+            return []
+
+
+    def get_distinct_interfaces(self) -> List[str]:
+        """Returns a sorted list of all unique interface names from the database."""
+        try:
+            conn = self._get_read_conn()
+            cursor = conn.cursor()
+
+            # Query all three tables to be comprehensive
+            cursor.execute("""
+                SELECT DISTINCT interface_name FROM speed_history_raw
+                UNION
+                SELECT DISTINCT interface_name FROM speed_history_minute
+                UNION
+                SELECT DISTINCT interface_name FROM speed_history_hour
+                ORDER BY interface_name
+            """)
+            interfaces = [row[0] for row in cursor.fetchall()]
+            return interfaces
+        except sqlite3.Error as e:
+            self.logger.error("Error fetching distinct interfaces: %s", e, exc_info=True)
+            return []
+
+
+    def get_earliest_data_timestamp(self) -> Optional[datetime]:
+        """
+        Retrieves the earliest data timestamp from the database by querying all tiers.
+        """
+        self.flush_batch()
+        # time.sleep(0.1)  # REMOVED: This was causing a 100ms freeze on the UI thread.
+        
+        try:
+            conn = self._get_read_conn()
+            cursor = conn.cursor()
+
+            query = """
+                SELECT MIN(earliest_ts) FROM (
+                    SELECT MIN(timestamp) as earliest_ts FROM speed_history_raw
+                    UNION ALL
+                    SELECT MIN(timestamp) as earliest_ts FROM speed_history_minute
+                    UNION ALL
+                    SELECT MIN(timestamp) as earliest_ts FROM speed_history_hour
+                ) WHERE earliest_ts IS NOT NULL;
+            """
+            cursor.execute(query)
+            result = cursor.fetchone()
+            
+            if result and result[0] is not None:
+                earliest_ts = int(result[0])
+                return datetime.fromtimestamp(earliest_ts)
+
+        except sqlite3.Error as e:
+            self.logger.error("Failed to retrieve the earliest timestamp from database: %s", e, exc_info=True)
+
+        return None
+
+
+    def cleanup(self) -> None:
+        """Flushes final data and cleanly stops the database worker thread."""
+        self.logger.info("Cleaning up WidgetState...")
+        self.batch_persist_timer.stop()
+        self.maintenance_timer.stop()
+        self.flush_batch()
+
+        # Close persistent read connections
+        with self._read_conns_lock:
+            for tid, conn in self._read_conns.items():
+                try:
+                    conn.close()
+                except:
+                    pass
+            self._read_conns.clear()
+
+        self.db_worker.stop()
+        # Only wait for the thread if it was actually running
+        if self.db_worker.isRunning():
+            self.db_worker.wait(2000) # Wait up to 2 seconds for the thread to finish
+
+
+    def _get_max_history_points(self) -> int:
+        """Calculates max points for the in-memory deque based on config."""
+        try:
+            history_minutes = self.config.get("history_minutes", 30)
+            update_rate_sec = self.config.get("update_rate", 1.0)
+            if update_rate_sec <= 0: update_rate_sec = 1.0
+            
+            points = int(round((history_minutes * 60) / update_rate_sec))
+            return max(10, min(points, 5000))
+
+        except Exception as e:
+            self.logger.error("Error calculating max history points: %s. Using default.", e)
+            return 1800
+
+          
+    def apply_config(self, config: Dict[str, Any]) -> None:
+        """Apply updated configuration and adjust state."""
+        self.logger.debug("Applying new configuration to WidgetState...")
+        self.config = config.copy()
+        new_max_points = self._get_max_history_points()
+
+        if new_max_points != self.max_history_points:
+            self.max_history_points = new_max_points
+            self.in_memory_history = deque(self.in_memory_history, maxlen=self.max_history_points)
+            self.aggregated_history = deque(self.aggregated_history, maxlen=self.max_history_points)
+            self.logger.debug("In-memory speed history capacity updated to %d points.", self.max_history_points)

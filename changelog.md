@@ -14,7 +14,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - **Context Menu Grouping:** Right-click menu items are now organized into logical groups with separators (windows / updates & support / exit) for easier scanning.
-- **Global Window Icon:** All application windows and dialogs (including update and support popups) now display the NetSpeedTray icon in the title bar.
+- **Global Window Icon:** All application windows and dialogs (including update and support popups) now display the speed_core icon in the title bar.
 - **README Overhaul:** Rewrote the README to reflect all v1.3.0/v1.3.1 features including hardware monitoring, App Activity, display modes, and RDP detection. Moved the Support section above Building from Source for better visibility.
 
 ### Fixed
@@ -45,13 +45,13 @@ All notable changes to this project will be documented in this file.
 - **App Activity Window:** Added an App Activity window (accessible from the tray menu) to view estimated per-app network activity (includes a non-admin mode with reduced accuracy).
 - **Hardware Monitoring:** Added CPU/GPU utilization tracking and optional RAM/VRAM readouts (vendor-agnostic GPU support via Windows Performance Counters / PDH).
 - **Optional Temperature Readouts:** Added a widget toggle to show CPU/GPU temperatures when available. Sources are tried in priority order: LibreHardwareMonitor/OpenHardwareMonitor WMI (all vendors, requires admin), `nvidia-smi` (NVIDIA GPU), and Windows PDH Thermal Zone / WMI ACPI (CPU fallback).
-  > **Note:** CPU and GPU temperatures require a kernel-level driver on most modern hardware. Install [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) and run it as Administrator — NetSpeedTray will detect it automatically. NVIDIA GPU temperature also works natively via `nvidia-smi`.
+  > **Note:** CPU and GPU temperatures require a kernel-level driver on most modern hardware. Install [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) and run it as Administrator — speed_core will detect it automatically. NVIDIA GPU temperature also works natively via `nvidia-smi`.
 - **Optional Power Readouts:** Added a widget toggle to show CPU/GPU power draw in Watts. Uses Intel RAPL via PDH (non-admin) for CPU, `nvidia-smi` for NVIDIA GPU, and LibreHardwareMonitor/OpenHardwareMonitor for all GPU vendors.
 - **Graph Window Hardware Views:** Added CPU and GPU history tabs, plus a refreshed Overview tab with live-updating, synchronized Network/CPU/GPU charts and quick at-a-glance stats.
 - **Widget Layout Modes:** Added Side-by-Side and Cycle display modes, a stacked CPU+GPU column option, and per-segment display ordering (Network/CPU/GPU/None).
 - **Context Menu Graph Access:** Added "Show Graph" to the right-click context menu for easier graph window discovery (previously only accessible via double-click).
 - **Hardware Data Retention:** Added hourly aggregation tier for hardware stats (matching speed data's 3-tier architecture: raw 24h → minute 30d → hour user-configurable), preventing data loss after 30 days.
-- **LibreHardwareMonitor Integration:** Auto-detects a running LibreHardwareMonitor or OpenHardwareMonitor instance via WMI, enabling temperature and power readings across all GPU vendors. The probe retries each poll cycle, so LHM can be started after NetSpeedTray.
+- **LibreHardwareMonitor Integration:** Auto-detects a running LibreHardwareMonitor or OpenHardwareMonitor instance via WMI, enabling temperature and power readings across all GPU vendors. The probe retries each poll cycle, so LHM can be started after speed_core.
 
 ### Changed
 - **Settings UI Redesign:** Consolidated settings pages from 8 to 6. Merged Mini Graph into Appearance, Troubleshooting into a footer Export Log button, and moved Tray Offset to General (renamed "Options" → "Behavior"). Removed the AdaptiveStackedWidget in favor of a fixed-size dialog with per-page scroll areas to eliminate resize oscillation and taskbar overlap on 1080p.
@@ -379,10 +379,10 @@ This release addresses a critical bug where the widget would incorrectly hide wh
 
 ## [1.1.8] - December 11, 2025
 
-This release marks a significant maturity milestone for NetSpeedTray. We are proud to announce that the application is now **digitally signed**, establishing a chain of trust and eliminating security warnings. Additionally, this update brings full Russian language support and a completely modernized, automated build pipeline.
+This release marks a significant maturity milestone for speed_core. We are proud to announce that the application is now **digitally signed**, establishing a chain of trust and eliminating security warnings. Additionally, this update brings full Russian language support and a completely modernized, automated build pipeline.
 
 ### 🛡️ Security & Trust
-*   **Digitally Signed Release:** NetSpeedTray is now officially signed with a trusted code signing certificate.
+*   **Digitally Signed Release:** speed_core is now officially signed with a trusted code signing certificate.
     *   Eliminates the "Unknown Publisher" warning from Windows SmartScreen.
     *   Guarantees that the executable has not been tampered with since it left the build server.
 *   **Security Patches:** Updated critical dependencies (including `fonttools` and `pandas`) to the latest secure versions to resolve reported vulnerabilities (CVEs).
@@ -497,7 +497,7 @@ This is a critical hotfix release that provides a definitive and comprehensive f
 
 ### ✨ Improved
 
--   **Installer Reliability:** The installer is now much more robust when updating a running instance of NetSpeedTray. It now attempts a graceful shutdown of the application before proceeding with the update, preventing the "Setup was unable to automatically close all applications" error and ensuring a smoother, more successful update process.
+-   **Installer Reliability:** The installer is now much more robust when updating a running instance of speed_core. It now attempts a graceful shutdown of the application before proceeding with the update, preventing the "Setup was unable to automatically close all applications" error and ensuring a smoother, more successful update process.
 
 ---
 
@@ -565,7 +565,7 @@ This is a major stability and quality-of-life release that addresses critical bu
     -   Fixed a bug where the desktop shortcut was sometimes left behind after uninstallation.
     -   Silent Uninstall with Data Removal: For a complete, unattended removal, run the following command in an **Administrator PowerShell**:
     ```powershell
-    & "C:\Program Files\NetSpeedTray\unins000.exe" /SILENT /PURGE=true
+    & "C:\Program Files\speed_core\unins000.exe" /SILENT /PURGE=true
     ```
 -   **Log File Privacy (Verified):** The privacy filter is now fully effective. It automatically obfuscates personal information before it is written to the log file.
     -   User home directories in file paths are replaced (e.g., `C:\Users\Erez\...` becomes `<USER_HOME>\...`).
@@ -581,7 +581,7 @@ This release focuses on providing a fast, and native-feeling user experience as 
 
 -   **Drastically Improved Startup Performance:** The application's compiled structure has been changed to eliminate the slow, single-file unpacking process.
     -   **Faster Launch:** Startup time is now significantly faster, as the application and its dependencies are no longer extracted to a temporary folder on every launch.
-    -   **New Distribution Formats:** To support this, NetSpeedTray is now distributed with a fast Inno Setup installer and a portable `.zip` archive for users who prefer a non-install option.
+    -   **New Distribution Formats:** To support this, speed_core is now distributed with a fast Inno Setup installer and a portable `.zip` archive for users who prefer a non-install option.
 -   **Seamless UI Responsiveness & Integration:** The widget's visibility logic is now fully event-driven, eliminating delays and making it feel like a native part of the Windows shell.
     -   **Instantaneous Auto-Hide & Fullscreen Detection:** The widget now appears and disappears instantly with an auto-hiding taskbar and when entering or exiting fullscreen applications.
     -   **Graceful System UI Handling:** Proactively hides when core system menus (like the Start Menu and network/volume flyouts) are opened, and reappears upon closing them. This provides a polished, non-intrusive experience and avoids visual glitches.
@@ -606,7 +606,7 @@ This release focuses on providing a fast, and native-feeling user experience as 
 
 ## [1.1.0] - August 12, 2025
 
-This is a significant update focused on improving data accuracy, providing more detailed graphing features, and creating a more stable foundation for the future. The data collection and storage pipeline has been substantially rebuilt to make NetSpeedTray a more capable and reliable network monitor.
+This is a significant update focused on improving data accuracy, providing more detailed graphing features, and creating a more stable foundation for the future. The data collection and storage pipeline has been substantially rebuilt to make speed_core a more capable and reliable network monitor.
 
 ### ✨ Major Features & Improvements
 
@@ -673,8 +673,8 @@ This is a major stability, performance, and quality-of-life update focused on re
 
 - To enable the data accuracy fixes, **users upgrading from a previous version must delete their old history database.** A new, clean database will be created automatically.
 - **Instructions:**
-  1.  Ensure NetSpeedTray is not running.
-  2.  Open File Explorer, paste `%APPDATA%\NetSpeedTray` into the address bar, and press Enter.
+  1.  Ensure speed_core is not running.
+  2.  Open File Explorer, paste `%APPDATA%\speed_core` into the address bar, and press Enter.
   3.  Delete the file named `speed_history.db`.
 
 ---
@@ -731,7 +731,7 @@ This release focused on quality-of-life improvements, introducing the initial ve
 
 - **Seamless Upgrades & WinGet Compatibility:** The Windows installer has been overhauled. It now correctly replaces the previous version's files, ensuring a clean and reliable upgrade experience. This change also prepares the application for distribution via the Windows Package Manager (WinGet).
 - **UI Clarity:** Renamed the confusing "Smart Threshold" toggle to **"Dynamic Update Rate"** to more accurately describe its power-saving function.
-- **User-Friendly File Naming:** The configuration and log files have been renamed to be more descriptive (`NetSpeedTray_Config.json` and `NetSpeedTray_Log.log`), making them easier for users to identify.
+- **User-Friendly File Naming:** The configuration and log files have been renamed to be more descriptive (`speed_core_Config.json` and `speed_core_Log.log`), making them easier for users to identify.
 
 ---
 
@@ -754,8 +754,8 @@ This release focused on quality-of-life improvements, introducing the initial ve
 ### 🛠️ Improvements & Refinements
 
 - **Smarter Installer:** The Windows installer now automatically replaces the old executable, ensuring a clean and seamless upgrade experience. Old version files are removed.
-- **Improved Configuration:** The configuration file has been renamed to `NetSpeedTray_Config.json` for clarity. The management system is now more robust, preventing settings from being accidentally discarded.
-- **Cleaner Log Files:** The log file has been unified and renamed to `NetSpeedTray_Log.log` to make troubleshooting easier.
+- **Improved Configuration:** The configuration file has been renamed to `speed_core_Config.json` for clarity. The management system is now more robust, preventing settings from being accidentally discarded.
+- **Cleaner Log Files:** The log file has been unified and renamed to `speed_core_Log.log` to make troubleshooting easier.
 - **Accurate Graph Stats:** The statistics in the main graph's status bar are now calculated correctly for all timelines, including "All".
 
 ### 🐛 Bug Fixes
@@ -806,7 +806,7 @@ This release introduces powerful new customization features for the taskbar widg
 #### Major Overhaul
 
 - **Full Modular Refactor:**  
-  Migrated from a single-file script to a modern, maintainable package structure (`src/netspeedtray/`). All logic is now organized into `core`, `views`, `utils`, `constants`, and `tests` modules.
+  Migrated from a single-file script to a modern, maintainable package structure (`src/speed_core/`). All logic is now organized into `core`, `views`, `utils`, `constants`, and `tests` modules.
 
 #### Added
 
@@ -904,13 +904,13 @@ This release introduces powerful new customization features for the taskbar widg
 - **Start Menu Interaction Issue**
 
   - The `Widget` may hide or become unresponsive when the Windows Start menu is opened, This issue arises due to a Windows limitation where `Shell_TrayWnd` (the taskbar window) and related UI elements (e.g., Start menu) can obscure or temporarily disable overlay windows - like the widget.
-  - Windows does not provide a reliable API or event to distinguish Start menu activation from other fullscreen or taskbar-related states, leading to potential misdetection in `is_fullscreen_app_active` or `check_and_update`. This behavior is outside NetSpeedTray’s control but may be mitigated in future updates by enhancing taskbar and Start menu state tracking.
+  - Windows does not provide a reliable API or event to distinguish Start menu activation from other fullscreen or taskbar-related states, leading to potential misdetection in `is_fullscreen_app_active` or `check_and_update`. This behavior is outside speed_core’s control but may be mitigated in future updates by enhancing taskbar and Start menu state tracking.
   - What this all means to the avarage user - when clicking on the start menu, the widget 'hides' and when clicking anywhere other than the taskbar, it will reappear
 
   ### Detailed Bug Fixes (for those interested)
 
 - **Enhanced Position Persistence**
-  - Modified `NetworkSpeedWidget.initialize_with_saved_position` and `use_saved_position` to prioritize loading and applying the last saved position (`position_x`, `position_y`) from `netspeedtray.conf` on startup, ensuring the widget appears exactly where the user left it after each Windows logon.
+  - Modified `NetworkSpeedWidget.initialize_with_saved_position` and `use_saved_position` to prioritize loading and applying the last saved position (`position_x`, `position_y`) from `speed_core.conf` on startup, ensuring the widget appears exactly where the user left it after each Windows logon.
   - Updated `update_position` to check for the `initial_position_set` flag and saved coordinates, defaulting to the last saved position unless explicitly overridden by dragging or major failures.
   - Improved error handling in `use_saved_position` and `update_position` to only fall back to position (100, 100) if there’s a critical failure (e.g., `taskbar_hwnd` or screen geometry cannot be detected). This prevents unnecessary repositioning to the top-left corner.
 - **"Flashing" Prevention**:
@@ -942,7 +942,7 @@ This release introduces powerful new customization features for the taskbar widg
   - Should return to the correct position after switching via a KVM, but temporary mispositioning or scaling issues may occur if the new monitor setup differs (resolution, scaling, taskbar position).
 - **Start Menu Interaction Issue**
   - The `Widget` may hide or become unresponsive when the Windows Start menu is opened, particularly on multi-monitor setups or with custom taskbar configurations. This issue arises due to a Windows limitation where `Shell_TrayWnd` (the taskbar window) and related UI elements (e.g., Start menu) can obscure or temporarily disable overlay windows like the widget.
-  - Windows does not provide a reliable API or event to distinguish Start menu activation from other fullscreen or taskbar-related states, leading to potential misdetection in `is_fullscreen_app_active` or `check_and_update`. This behavior is outside NetSpeedTray’s control but may be mitigated in future updates by enhancing taskbar and Start menu state tracking.
+  - Windows does not provide a reliable API or event to distinguish Start menu activation from other fullscreen or taskbar-related states, leading to potential misdetection in `is_fullscreen_app_active` or `check_and_update`. This behavior is outside speed_core’s control but may be mitigated in future updates by enhancing taskbar and Start menu state tracking.
   - Functionally - when clicking on the start menu, the widget 'hides' and when clicking anywhere but on the taskbar, it will reappear
 - **Edge Cases**:
   - Multiple or docked taskbars, monitor hot-plugging, high DPI scaling on small monitors, fullscreen apps on non-taskbar monitors, low-performance systems, KVM switches to non-Windows OS, and custom taskbar positions may cause issues or misbehavior.

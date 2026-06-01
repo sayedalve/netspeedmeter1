@@ -1,11 +1,11 @@
 artifacts:
   # 1. The main application executable produced by PyInstaller
-  - slug: "netspeedtray-executable"
-    path: "dist/NetSpeedTray/NetSpeedTray.exe"
+  - slug: "speed_core-executable"
+    path: "dist/speed_core/speed_core.exe"
     signing_policy_slug: "test-signing" # Use the test certificate for now
 
   # 2. The final installer package produced by Inno Setup
-  - slug: "netspeedtray-installer"
+  - slug: "speed_core-installer"
     # Use a wildcard (*) to match any version (e.g., v1.1.7, v1.1.8)
-    path: "installer/NetSpeedTray-*-Setup.exe"
+    path: "installer/speed_core-*-Setup.exe"
     signing_policy_slug: "test-signing" # Use the test certificate for now

@@ -11,7 +11,7 @@ popd
 :: --- Configuration ---
 echo Resolving Python from: "%ROOT_DIR%\.venv\Scripts\python.exe"
 
-"%ROOT_DIR%\.venv\Scripts\python.exe" -c "import sys, os; sys.path.append(os.path.join(r'%ROOT_DIR%', 'src')); import netspeedtray; print(netspeedtray.__version__)" > "%BUILD_DIR%version.tmp"
+"%ROOT_DIR%\.venv\Scripts\python.exe" -c "import sys, os; sys.path.append(os.path.join(r'%ROOT_DIR%', 'src')); import speed_core; print(speed_core.__version__)" > "%BUILD_DIR%version.tmp"
 
 if not exist "%BUILD_DIR%version.tmp" (
     echo.
@@ -53,8 +53,8 @@ echo Verifying dependencies...
 echo Verifying dependencies... >> "%LOG_FILE%"
 set "start_time=%TIME%"
 if not exist "%CODENAME%" (echo ERROR: monitor.py missing & exit /b 1)
-if not exist "%ROOT_DIR%\assets\NetSpeedTray.ico" (echo ERROR: NetSpeedTray.ico missing & exit /b 1)
-if not exist "%BUILD_DIR%NetSpeedTray.spec" (echo ERROR: netspeedtray.spec missing & exit /b 1)
+if not exist "%ROOT_DIR%\assets\speed_core.ico" (echo ERROR: speed_core.ico missing & exit /b 1)
+if not exist "%BUILD_DIR%speed_core.spec" (echo ERROR: speed_core.spec missing & exit /b 1)
 if not exist "%BUILD_DIR%setup.iss" (echo ERROR: setup.iss missing & exit /b 1)
 if not exist "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" (echo ERROR: Inno Setup 6 not installed & exit /b 1)
 call "%ROOT_DIR%\.venv\Scripts\activate.bat" 2>nul
@@ -76,7 +76,7 @@ echo Generating version info for v%VERSION%...
 if errorlevel 1 (echo ERROR: Failed to generate version info & exit /b 1)
 :: --------------------------------------------------
 
-pyinstaller --noconfirm --distpath "%DIST_DIR%" NetSpeedTray.spec >> "%LOG_FILE%" 2>&1
+pyinstaller --noconfirm --distpath "%DIST_DIR%" speed_core.spec >> "%LOG_FILE%" 2>&1
 
 :: Stage 4: Generate Installer
 echo.
@@ -86,7 +86,7 @@ set "start_time=%TIME%"
 :: UPDATED: Pass the version to Inno Setup using /DAppVersion
 "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion="%VERSION%" "%BUILD_DIR%setup.iss" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (echo ERROR: Installer creation failed. Check %LOG_FILE% & exit /b 1)
-if not exist "%INSTALLER_DIR%\NetSpeedTray-%VERSION%-x64-Setup.exe" (echo ERROR: Setup file not found after compilation & exit /b 1)
+if not exist "%INSTALLER_DIR%\speed_core-%VERSION%-x64-Setup.exe" (echo ERROR: Setup file not found after compilation & exit /b 1)
 set "end_time=%TIME%"
 call :log_elapsed "Generating installer" "%start_time%" "%end_time%"
 
@@ -95,18 +95,18 @@ echo.
 echo Packaging release files...
 echo Packaging release files... >> "%LOG_FILE%"
 set "start_time=%TIME%"
-set "RELEASE_DIR=%DIST_DIR%\NetSpeedTray-%VERSION%"
-set "PORTABLE_DIR_NAME=NetSpeedTray-Portable"
+set "RELEASE_DIR=%DIST_DIR%\speed_core-%VERSION%"
+set "PORTABLE_DIR_NAME=speed_core-Portable"
 
 :: Create the main release directory
 if not exist "!RELEASE_DIR!" mkdir "!RELEASE_DIR!"
 
 :: Move the installer into the release directory
-move "%INSTALLER_DIR%\NetSpeedTray-%VERSION%-x64-Setup.exe" "!RELEASE_DIR!\" > NUL
+move "%INSTALLER_DIR%\speed_core-%VERSION%-x64-Setup.exe" "!RELEASE_DIR!\" > NUL
 
 :: Create the portable zip archive
 echo Creating portable zip file...
-powershell -Command "Compress-Archive -Path '%DIST_DIR%\NetSpeedTray' -DestinationPath '!RELEASE_DIR!\%PORTABLE_DIR_NAME%-%VERSION%.zip' -Force" >> "%LOG_FILE%" 2>&1
+powershell -Command "Compress-Archive -Path '%DIST_DIR%\speed_core' -DestinationPath '!RELEASE_DIR!\%PORTABLE_DIR_NAME%-%VERSION%.zip' -Force" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (echo ERROR: Failed to create portable zip file. & exit /b 1)
 
 set "end_time=%TIME%"
@@ -124,8 +124,8 @@ set "CHECKSUM_FILE=%RELEASE_DIR%\checksums.txt"
     echo ### %PORTABLE_DIR_NAME%-%VERSION%.zip
     certutil -hashfile "!RELEASE_DIR!\%PORTABLE_DIR_NAME%-%VERSION%.zip" SHA256 | findstr /v "hash"
     echo.
-    echo ### NetSpeedTray-%VERSION%-x64-Setup.exe
-    certutil -hashfile "!RELEASE_DIR!\NetSpeedTray-%VERSION%-x64-Setup.exe" SHA256 | findstr /v "hash"
+    echo ### speed_core-%VERSION%-x64-Setup.exe
+    certutil -hashfile "!RELEASE_DIR!\speed_core-%VERSION%-x64-Setup.exe" SHA256 | findstr /v "hash"
 ) > "!CHECKSUM_FILE!"
 set "end_time=%TIME%"
 call :log_elapsed "Computing checksums" "%start_time%" "%end_time%"
@@ -141,13 +141,13 @@ echo Removing intermediate PyInstaller build folder...
 if exist "%BUILD_DIR%build" rmdir /s /q "%BUILD_DIR%build" 2>nul
 
 echo Removing raw PyInstaller output folder from dist...
-if exist "%DIST_DIR%\NetSpeedTray" rmdir /s /q "%DIST_DIR%\NetSpeedTray" 2>nul
+if exist "%DIST_DIR%\speed_core" rmdir /s /q "%DIST_DIR%\speed_core" 2>nul
 
 echo Removing leftover EXE from dist folder (if any)...
-if exist "%DIST_DIR%\NetSpeedTray.exe" del /f /q "%DIST_DIR%\NetSpeedTray.exe" 2>nul
+if exist "%DIST_DIR%\speed_core.exe" del /f /q "%DIST_DIR%\speed_core.exe" 2>nul
 if exist "%INSTALLER_DIR%" rmdir /s /q "%INSTALLER_DIR%" 2>nul
 if exist "%ROOT_DIR%\src\__pycache__" rmdir /s /q "%ROOT_DIR%\src\__pycache__" 2>nul
-for /r "%ROOT_DIR%\src\netspeedtray" %%i in (__pycache__) do if exist "%%i" rmdir /s /q "%%i" 2>nul
+for /r "%ROOT_DIR%\src\speed_core" %%i in (__pycache__) do if exist "%%i" rmdir /s /q "%%i" 2>nul
 for /r "%ROOT_DIR%\src" %%i in (*.pyc) do if exist "%%i" del /f /q "%%i" 2>nul
 
 set "end_time=%TIME%"

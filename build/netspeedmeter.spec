@@ -22,7 +22,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('..\\assets', 'assets'),
-        ('..\\src\\netspeedtray\\constants\\locales', 'netspeedtray/constants/locales'),
+        ('..\\src\\speed_core\\constants\\locales', 'speed_core/constants/locales'),
     ],
     hiddenimports=my_hidden_imports,
     hookspath=[],
@@ -54,7 +54,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='..\\assets\\NetSpeedTray.ico',
+    icon='..\\assets\\speed_core.ico',
 )
 
 coll = COLLECT(

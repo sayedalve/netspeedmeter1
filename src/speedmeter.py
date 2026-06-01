@@ -30,10 +30,10 @@ import winerror
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
-from netspeedtray import constants
-from netspeedtray.utils.config import ConfigManager, ConfigError
-from netspeedtray.utils.taskbar_utils import get_taskbar_height
-from netspeedtray.views.speed_widget import NetSpeedMeterWidget
+from speed_core import constants
+from speed_core.utils.config import ConfigManager, ConfigError
+from speed_core.utils.taskbar_utils import get_taskbar_height
+from speed_core.views.speed_widget import NetSpeedMeterWidget
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ def main() -> int:
 
             # App icon
             try:
-                from netspeedtray.utils.helpers import get_app_asset_path
+                from speed_core.utils.helpers import get_app_asset_path
                 from PyQt6.QtGui import QIcon
                 icon_path = get_app_asset_path(constants.app.ICON_FILENAME)
                 if icon_path.exists():

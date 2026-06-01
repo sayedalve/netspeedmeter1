@@ -29,12 +29,12 @@ VSVersionInfo(
     StringFileInfo(
       [
         StringStruct('CompanyName', 'Erez C137'),
-        StringStruct('FileDescription', 'NetSpeedTray'),
+        StringStruct('FileDescription', 'speed_core'),
         StringStruct('FileVersion', '{version_full_str}'),
-        StringStruct('InternalName', 'NetSpeedTray'),
+        StringStruct('InternalName', 'speed_core'),
         StringStruct('LegalCopyright', 'Copyright (c) Erez C137'),
-        StringStruct('OriginalFilename', 'NetSpeedTray.exe'),
-        StringStruct('ProductName', 'NetSpeedTray'),
+        StringStruct('OriginalFilename', 'speed_core.exe'),
+        StringStruct('ProductName', 'speed_core'),
         StringStruct('ProductVersion', '{version_str}'),
       ]
     ),

@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run NetSpeedTray",
+      "name": "Run speed_core",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/src/monitor.py",

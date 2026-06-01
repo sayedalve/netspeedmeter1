@@ -10,7 +10,7 @@ popd
 :: --- Configuration ---
 echo Resolving Python from: "%ROOT_DIR%\.venv\Scripts\python.exe"
 
-"%ROOT_DIR%\.venv\Scripts\python.exe" -c "import sys, os; sys.path.append(os.path.join(r'%ROOT_DIR%', 'src')); import netspeedtray; print(netspeedtray.__version__)" > "%BUILD_DIR%version.tmp"
+"%ROOT_DIR%\.venv\Scripts\python.exe" -c "import sys, os; sys.path.append(os.path.join(r'%ROOT_DIR%', 'src')); import speed_core; print(speed_core.__version__)" > "%BUILD_DIR%version.tmp"
 
 if not exist "%BUILD_DIR%version.tmp" (
     echo.
@@ -52,8 +52,8 @@ echo Verifying dependencies...
 echo Verifying dependencies... >> "%LOG_FILE%"
 set "start_time=%TIME%"
 if not exist "%CODENAME%" (echo ERROR: monitor.py missing & exit /b 1)
-if not exist "%ROOT_DIR%\assets\NetSpeedTray.ico" (echo ERROR: NetSpeedTray.ico missing & exit /b 1)
-if not exist "%BUILD_DIR%netspeedtray.spec" (echo ERROR: netspeedtray.spec missing & exit /b 1)
+if not exist "%ROOT_DIR%\assets\speed_core.ico" (echo ERROR: speed_core.ico missing & exit /b 1)
+if not exist "%BUILD_DIR%speed_core.spec" (echo ERROR: speed_core.spec missing & exit /b 1)
 call "%ROOT_DIR%\.venv\Scripts\activate.bat" 2>nul
 "%ROOT_DIR%\.venv\Scripts\python.exe" -c "import PyInstaller" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (echo ERROR: PyInstaller not installed. Install with: python -m pip install -r dev-requirements.txt & exit /b 1)
@@ -76,9 +76,9 @@ echo.
 echo Compiling executable...
 echo Compiling executable... >> "%LOG_FILE%"
 set "start_time=%TIME%"
-"%ROOT_DIR%\.venv\Scripts\python.exe" -m PyInstaller --noconfirm --distpath "%DIST_DIR%" netspeedtray.spec >> "%LOG_FILE%" 2>&1
+"%ROOT_DIR%\.venv\Scripts\python.exe" -m PyInstaller --noconfirm --distpath "%DIST_DIR%" speed_core.spec >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (echo ERROR: PyInstaller compilation failed. Check %LOG_FILE% for details & exit /b 1)
-if not exist "%DIST_DIR%\NetSpeedTray\NetSpeedTray.exe" (echo ERROR: Executable not found after compilation & exit /b 1)
+if not exist "%DIST_DIR%\speed_core\speed_core.exe" (echo ERROR: Executable not found after compilation & exit /b 1)
 set "end_time=%TIME%"
 call :log_elapsed "Compiling executable" "%start_time%" "%end_time%"
 
@@ -88,7 +88,7 @@ echo Moving executable to output directory...
 echo Moving executable to output directory... >> "%LOG_FILE%"
 set "start_time=%TIME%"
 mkdir "%OUTPUT_DIR%" 2>nul
-move "%DIST_DIR%\NetSpeedTray\NetSpeedTray.exe" "%OUTPUT_DIR%\NetSpeedTray-v%VERSION%.exe" > NUL
+move "%DIST_DIR%\speed_core\speed_core.exe" "%OUTPUT_DIR%\speed_core-v%VERSION%.exe" > NUL
 if errorlevel 1 (echo ERROR: Failed to move executable & exit /b 1)
 set "end_time=%TIME%"
 call :log_elapsed "Moving executable" "%start_time%" "%end_time%"
@@ -103,7 +103,7 @@ cd /d "%ROOT_DIR%"
 if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%" 2>nul
 if exist "%BUILD_DIR%build" rmdir /s /q "%BUILD_DIR%build" 2>nul
 if exist "%ROOT_DIR%\src\__pycache__" rmdir /s /q "%ROOT_DIR%\src\__pycache__" 2>nul
-for /r "%ROOT_DIR%\src\netspeedtray" %%i in (__pycache__) do if exist "%%i" rmdir /s /q "%%i" 2>nul
+for /r "%ROOT_DIR%\src\speed_core" %%i in (__pycache__) do if exist "%%i" rmdir /s /q "%%i" 2>nul
 for /r "%ROOT_DIR%\src" %%i in (*.pyc) do if exist "%%i" del /f /q "%%i" 2>nul
 
 set "end_time=%TIME%"
@@ -119,7 +119,7 @@ echo.
 echo    BUILD SUCCESSFUL
 echo.
 echo   Executable created:
-echo     %OUTPUT_DIR%\NetSpeedTray-v%VERSION%.exe
+echo     %OUTPUT_DIR%\speed_core-v%VERSION%.exe
 echo.
 exit /b 0
 

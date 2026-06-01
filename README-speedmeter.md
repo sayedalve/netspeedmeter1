@@ -6,7 +6,7 @@ Displays live **↑ upload** and **↓ download** speeds — nothing else.
 
 ---
 
-## What changed from NetSpeedTray
+## What changed from speed_core
 
 This is a focused rebuild of the `netspeedmeter1` project.  
 The following were **removed**:
@@ -73,7 +73,7 @@ The output will be in `dist\NetSpeedMeter\`.
 ```
 src/
   speedmeter.py                          ← NEW entry point
-  netspeedtray/
+  speed_core/
     views/
       speed_widget.py                    ← NEW main widget (NetSpeedMeterWidget)
       speed_settings.py                  ← NEW lean settings dialog
