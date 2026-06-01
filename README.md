@@ -1,103 +1,127 @@
-# NetSpeedMeter
+# Internet Speed Meter
 
-A lightweight, dedicated **internet speed meter** for the Windows taskbar.
+<p align="left">
+  <strong>A hyper-focused, lightweight, and modern internet speed meter for the Windows taskbar.</strong>
+</p>
 
-Displays live **↑ upload** and **↓ download** speeds — nothing else.
-
----
-
-## What changed from speed_core
-
-This is a focused rebuild of the `netspeedmeter1` project.  
-The following were **removed**:
-
-| Removed feature | Reason |
-|---|---|
-| CPU / GPU utilization monitoring | Out of scope |
-| RAM / VRAM monitoring | Out of scope |
-| CPU / GPU temperature & power | Out of scope |
-| Per-app network activity window | Out of scope |
-| History graph window (matplotlib) | Removed; use mini-graph overlay instead |
-| Widget cycling / side-by-side hardware layout | Out of scope |
-| Localization (9 languages) | Kept minimal EN strings for now |
-| LibreHardwareMonitor integration | Out of scope |
-| RDP session detection for GPU | Out of scope |
-| Update checker | Can be re-added later |
-
-The following were **kept and refined**:
-
-| Feature | Notes |
-|---|---|
-| ↑ Upload / ↓ Download live speeds | Core feature |
-| Network adapter selection | Auto / All Physical / All / Specific |
-| Speed units | Kbps / Mbps / KB/s / MB/s (decimal & binary) |
-| Mini-graph overlay | Background area chart, configurable opacity |
-| Startup with Windows | Registry Run key |
-| Widget position | Free move, lock position, tray offset |
-| Color coding | Speed thresholds → green/orange |
-| Auto-theme | Follows Windows light/dark |
+Internet Speed Meter is a strictly dedicated network utility that displays live **Upload (↑)** and **Download (↓)** speeds directly on your screen. Built with Python and PyQt6, it is designed for users who want clean, accurate network monitoring without the bloat of heavy hardware tracking.
 
 ---
 
-## Running from source
+## 🙏 Acknowledgments
+
+This project is a heavily refactored fork of the excellent NetSpeedTray originally created by **erez-c137**. While this version removes CPU, GPU, and RAM monitoring to focus exclusively on network speeds, the foundational PyQt6 architecture and Win32 taskbar integration were built upon their original work.
+
+---
+
+## ✨ Features
+
+* **Pure Performance**
+  Zero CPU, GPU, or RAM monitoring overhead. It does one thing and does it well.
+
+* **Modern Aesthetic**
+  Red and black dark mode styling with white values, a red upload arrow, and a green download arrow.
+
+* **Typography Scaling**
+  Fully customizable text sizes for numbers, units, and arrows directly from the settings UI.
+
+* **Dynamic Mini Graph**
+  Optional background area chart to visualize recent network history with configurable opacity.
+
+* **Smart Positioning**
+  Pin it to your taskbar, lock it in place, or enable Free Move to drag it anywhere on your screen.
+
+* **Advanced Adapter Selection**
+  Monitor your primary internet connection automatically, or explicitly select specific virtual or physical network adapters.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+* Windows 10 or Windows 11
+* Python 3.12+
+
+### Running from Source
+
+1. Clone the repository:
 
 ```bash
-# 1. Create a virtual environment
+git clone https://github.com/sayedalve/netspeedmeter1.git
+cd netspeedmeter1
+```
+
+2. Create and activate a virtual environment:
+
+```bash
 python -m venv .venv
 .venv\Scripts\activate
+```
 
-# 2. Install dependencies (much lighter than original)
+3. Install dependencies:
+
+```bash
 pip install -r requirements-speedmeter.in
+```
 
-# 3. Run
+4. Launch the application:
+
+```bash
 python src/speedmeter.py
 ```
 
-> **Note:** The original `monitor.py` entry point still works unchanged.  
-> The new entry point is `src/speedmeter.py`.
-
 ---
 
-## Building an executable
+## 🔨 Building the Executable
 
-```bat
+To compile the project into a standalone Windows executable:
+
+```bash
 pyinstaller build\netspeedmeter.spec
 ```
 
-The output will be in `dist\NetSpeedMeter\`.
+The compiled executable will be available in:
+
+```text
+dist\NetSpeedMeter\
+```
 
 ---
 
-## File overview
+## ⚙️ Configuration
 
-```
+Right click the taskbar widget to access the Settings panel.
+
+| Category       | Available Controls                                                                                                                    |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **General**    | Application startup behavior, polling interval, widget positioning, free move, lock position, tray offsets, and fullscreen visibility |
+| **Network**    | Network adapter filtering, display units (Kbps, Mbps, KB/s, MB/s), decimal precision, and upload/download visual ordering             |
+| **Appearance** | Typography scaling, mini graph options, history duration, and widget background opacity                                               |
+
+---
+
+## 🏗️ Architecture
+
+This project is a streamlined and stabilized fork of NetSpeedTray. The core module (`speed_core`) has been refactored to remove heavy dependencies such as `matplotlib` and `pandas`, replacing them with a lightweight custom `QPainter` rendering engine.
+
+```text
 src/
-  speedmeter.py                          ← NEW entry point
-  speed_core/
-    views/
-      speed_widget.py                    ← NEW main widget (NetSpeedMeterWidget)
-      speed_settings.py                  ← NEW lean settings dialog
-      widget/                            ← UNCHANGED (layout, theme, position)
-    utils/
-      speed_renderer.py                  ← NEW focused renderer (↑↓ only)
-    core/                                ← UNCHANGED (monitor thread, controller, etc.)
-    constants/                           ← UNCHANGED
+├── speedmeter.py
+└── speed_core/
+    ├── constants/
+    │   └── Centralized configuration and scaling settings
+    ├── core/
+    │   └── Background threads and single instance guards
+    ├── utils/
+    │   └── speed_renderer.py (Custom QPainter engine)
+    └── views/
+        ├── speed_widget.py
+        └── speed_settings.py
 ```
 
 ---
 
-## Settings
+## 📄 License
 
-Right-click the taskbar widget → Settings.
-
-| Tab | Settings |
-|---|---|
-| **General** | Update rate, startup, free move, lock position, tray offset |
-| **Network** | Adapter selection, speed units, decimal places, swap ↑↓ |
-| **Appearance** | Mini-graph toggle/opacity/history, background opacity |
-
----
-
-## License
-
-GNU GPL v3.0 — same as the upstream project.
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0), preserving the open source spirit of the upstream project.
